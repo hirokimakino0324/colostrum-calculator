@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>初乳給与量シミュレーター</title>
+<meta name="theme-color" content="#0f766e">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif; }
+  /* 数値入力のスピナーを消してスマホで押しやすく */
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; }
+  .seg:checked + label { background-color: #0d9488; color: #fff; border-color: #0d9488; box-shadow: 0 4px 10px rgba(13,148,136,.35); }
+</style>
+</head>
+<body class="bg-slate-100 text-slate-800">
+
+<div class="max-w-xl mx-auto pb-24">
+
+  <!-- ヘッダー -->
+  <header class="bg-teal-700 text-white px-5 py-5 shadow-lg sticky top-0 z-10">
+    <h1 class="text-2xl font-bold tracking-wide">初乳給与量シミュレーター</h1>
+    <p class="text-teal-100 text-sm mt-1">子牛に「何を・どれだけ・いつ」飲ませるか</p>
+  </header>
+
+  <main class="px-4 pt-5 space-y-4">
+
+    <!-- Q1 目標血清IgG -->
+    <section class="bg-white rounded-2xl shadow p-5">
+      <div class="flex items-start gap-2">
+        <span class="bg-teal-600 text-white text-sm font-bold rounded-full w-7 h-7 flex items-center justify-center shrink-0">1</span>
+        <div>
+          <h2 class="text-lg font-bold">目標とする血清IgG濃度は？</h2>
+          <p class="text-xs text-slate-500 mt-1">10 g/L＝最低ライン／20 g/L＝標準的な目標／30 g/L＝最良（疾病リスク最小）</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-3 gap-2 mt-4">
+        <input class="seg sr-only" type="radio" name="target" id="t10" value="10">
+        <label for="t10" class="cursor-pointer text-center border-2 border-slate-200 rounded-xl py-3 font-bold text-lg select-none">10<span class="block text-[11px] font-normal">g/L</span></label>
+
+        <input class="seg sr-only" type="radio" name="target" id="t20" value="20" checked>
+        <label for="t20" class="cursor-pointer text-center border-2 border-slate-200 rounded-xl py-3 font-bold text-lg select-none">20<span class="block text-[11px] font-normal">g/L</span></label>
+
+        <input class="seg sr-only" type="radio" name="target" id="t30" value="30">
+        <label for="t30" class="cursor-pointer text-center border-2 border-slate-200 rounded-xl py-3 font-bold text-lg select-none">30<span class="block text-[11px] font-normal">g/L</span></label>
+      </div>
+    </section>
+
+    <!-- Q2 出生後経過時間 -->
+    <section class="bg-white rounded-2xl shadow p-5">
+      <div class="flex items-start gap-2">
+        <span class="bg-teal-600 text-white text-sm font-bold rounded-full w-7 h-7 flex items-center justify-center shrink-0">2</span>
+        <div>
+          <h2 class="text-lg font-bold">出生後、何時間たっていますか？</h2>
+          <p class="text-xs text-slate-500 mt-1">時間がたつほど腸からの吸収率が下がります</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 mt-4">
+        <input id="hours" type="number" inputmode="decimal" min="0" max="48" step="0.5" value="1"
+               class="w-full text-3xl font-bold text-center border-2 border-slate-200 rounded-xl py-3 focus:border-teal-500 focus:outline-none">
+        <span class="text-xl font-bold text-slate-500 shrink-0">時間</span>
+      </div>
+      <div class="flex gap-2 mt-3 flex-wrap">
+        <button type="button" data-h="1" class="quick px-3 py-2 text-sm bg-slate-100 rounded-lg border border-slate-200">1時間</button>
+        <button type="button" data-h="3" class="quick px-3 py-2 text-sm bg-slate-100 rounded-lg border border-slate-200">3時間</button>
+        <button type="button" data-h="6" class="quick px-3 py-2 text-sm bg-slate-100 rounded-lg border border-slate-200">6時間</button>
+        <button type="button" data-h="12" class="quick px-3 py-2 text-sm bg-slate-100 rounded-lg border border-slate-200">12時間</button>
+        <button type="button" data-h="24" class="quick px-3 py-2 text-sm bg-slate-100 rounded-lg border border-slate-200">24時間</button>
+      </div>
+    </section>
+
+    <!-- Q3 Brix -->
+    <section class="bg-white rounded-2xl shadow p-5">
+      <div class="flex items-start gap-2">
+        <span class="bg-teal-600 text-white text-sm font-bold rounded-full w-7 h-7 flex items-center justify-center shrink-0">3</span>
+        <div>
+          <h2 class="text-lg font-bold">初乳のBrixは何％ですか？</h2>
+          <p class="text-xs text-slate-500 mt-1">22％以上が合格ライン。初乳がない場合は 0 を入力</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 mt-4">
+        <input id="brix" type="number" inputmode="decimal" min="0" max="35" step="0.5" value="24"
+               class="w-full text-3xl font-bold text-center border-2 border-slate-200 rounded-xl py-3 focus:border-teal-500 focus:outline-none">
+        <span class="text-xl font-bold text-slate-500 shrink-0">％</span>
+      </div>
+      <input id="brixRange" type="range" min="0" max="35" step="0.5" value="24" class="w-full mt-4 accent-teal-600">
+      <p id="brixNote" class="text-sm mt-2 font-bold"></p>
+    </section>
+
+    <!-- 結果 -->
+    <section id="result" class="space-y-4"></section>
+
+    <!-- 詳細設定 -->
+    <details class="bg-white rounded-2xl shadow p-5">
+      <summary class="font-bold cursor-pointer select-none">詳細設定（子牛の体重・初乳製剤）</summary>
+      <div class="mt-4 space-y-4">
+        <div>
+          <label class="block text-sm font-bold mb-1">子牛の体重（kg）</label>
+          <input id="bw" type="number" inputmode="decimal" min="15" max="80" step="1" value="40"
+                 class="w-full border-2 border-slate-200 rounded-lg px-3 py-2 text-lg">
+          <p class="text-xs text-slate-500 mt-1">血漿量＝体重×9％として必要IgG量を計算します</p>
+        </div>
+        <div>
+          <label class="block text-sm font-bold mb-1">初乳製剤 1袋あたりのIgG量（g）</label>
+          <input id="bagIgG" type="number" inputmode="decimal" min="10" max="300" step="5" value="100"
+                 class="w-full border-2 border-slate-200 rounded-lg px-3 py-2 text-lg">
+          <p class="text-xs text-slate-500 mt-1">お使いの製品の表示に合わせて変更してください</p>
+        </div>
+        <div>
+          <label class="block text-sm font-bold mb-1">分割給与の間隔（時間）</label>
+          <input id="gap" type="number" inputmode="decimal" min="1" max="12" step="1" value="6"
+                 class="w-full border-2 border-slate-200 rounded-lg px-3 py-2 text-lg">
+        </div>
+      </div>
+    </details>
+
+    <!-- 計算根拠 -->
+    <details class="bg-white rounded-2xl shadow p-5 text-sm text-slate-600 leading-relaxed">
+      <summary class="font-bold cursor-pointer select-none text-slate-800">計算の考え方</summary>
+      <ul class="list-disc pl-5 mt-3 space-y-2">
+        <li>必要な吸収IgG量(g) ＝ 目標血清IgG(g/L) × 血漿量(L)。血漿量は体重の9％で計算。</li>
+        <li>初乳中IgG濃度(g/L) ≒ Brix(％) × 2.7 − 10（Brix 22％ ≒ 約50 g/L）。</li>
+        <li>吸収率(AEA)は出生直後で約35％、その後時間とともに低下（半減期の目安あり）、24時間で腸管が閉鎖しほぼ吸収されなくなるものとして補正しています。</li>
+        <li>1回の給与は最大4Lまで。足りない分は設定した間隔で分割し、そのときの吸収率で再計算しています。</li>
+        <li>目安を示すツールです。最終判断は獣医師・農場のプロトコルに従ってください。</li>
+      </ul>
+    </details>
+
+    <p class="text-center text-xs text-slate-400 pt-2">© 初乳給与量シミュレーター</p>
+  </main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var MAX_FEED = 4.0;        // 1回あたりの最大給与量(L)
+  var MAX_FEEDS = 4;         // 分割の上限回数
+  var CLOSURE_H = 24;        // 腸管閉鎖の目安(時間)
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* 吸収率(AEA)：出生直後35％、時間とともに指数的に低下、24時間でほぼゼロ */
+  function aea(t) {
+    if (t >= CLOSURE_H) return 0.02;
+    var base = 0.35 * Math.exp(-0.075 * Math.max(0, t - 2));
+    return Math.max(0.03, base);
+  }
+
+  /* Brix → 初乳中IgG濃度 (g/L) */
+  function igGfromBrix(brix) {
+    return Math.max(0, brix * 2.7 - 10);
+  }
+
+  function fmt(n, d) {
+    d = (d === undefined) ? 1 : d;
+    return (Math.round(n * Math.pow(10, d)) / Math.pow(10, d)).toFixed(d);
+  }
+
+  function card(color, html) {
+    return '<div class="bg-white rounded-2xl shadow-lg overflow-hidden border-t-8 ' + color + '">' + html + '</div>';
+  }
+
+  function calc() {
+    var target = parseFloat(document.querySelector('input[name=target]:checked').value);
+    var hours  = parseFloat($('hours').value);
+    var brix   = parseFloat($('brix').value);
+    var bw     = parseFloat($('bw').value);
+    var bagIgG = parseFloat($('bagIgG').value);
+    var gap    = parseFloat($('gap').value);
+
+    if (isNaN(hours)) hours = 0;
+    if (isNaN(brix)) brix = 0;
+    if (isNaN(bw) || bw <= 0) bw = 40;
+    if (isNaN(bagIgG) || bagIgG <= 0) bagIgG = 100;
+    if (isNaN(gap) || gap <= 0) gap = 6;
+
+    var plasma = bw * 0.09;                 // 血漿量(L)
+    var needAbsorbed = target * plasma;     // 吸収させたいIgG総量(g)
+    var conc = igGfromBrix(brix);           // 初乳中IgG(g/L)
+
+    /* Brixの色分けメモ */
+    var note = $('brixNote');
+    if (brix >= 22) {
+      note.textContent = '✅ 合格ライン（推定IgG 約' + fmt(conc, 0) + ' g/L）';
+      note.className = 'text-sm mt-2 font-bold text-teal-700';
+    } else if (brix > 0) {
+      note.textContent = '⚠️ 22％未満（推定IgG 約' + fmt(conc, 0) + ' g/L）品質不足です';
+      note.className = 'text-sm mt-2 font-bold text-red-600';
+    } else {
+      note.textContent = '初乳がない／測っていない場合は 0 のままでOK';
+      note.className = 'text-sm mt-2 font-bold text-slate-500';
+    }
+
+    var out = [];
+
+    /* ── 時間経過の警告 ─────────────────────────── */
+    var abs = aea(hours);
+    var timeMsg, timeColor;
+    if (hours < 2) { timeMsg = '出生後 ' + fmt(hours) + ' 時間：吸収率はいちばん高い時間帯です（推定吸収率 約' + fmt(abs * 100, 0) + '％）。今すぐ飲ませましょう。'; timeColor = 'bg-teal-50 text-teal-800 border-teal-300'; }
+    else if (hours < 6) { timeMsg = '出生後 ' + fmt(hours) + ' 時間：吸収率が下がり始めています（推定 約' + fmt(abs * 100, 0) + '％）。急いで給与してください。'; timeColor = 'bg-amber-50 text-amber-800 border-amber-300'; }
+    else if (hours < 12) { timeMsg = '⚠️ 出生後 ' + fmt(hours) + ' 時間：吸収率がかなり低下（推定 約' + fmt(abs * 100, 0) + '％）。必要量が大きく増えます。'; timeColor = 'bg-orange-50 text-orange-800 border-orange-300'; }
+    else if (hours < CLOSURE_H) { timeMsg = '🚨 出生後 ' + fmt(hours) + ' 時間：ほとんど吸収できません（推定 約' + fmt(abs * 100, 0) + '％）。全量の達成は困難です。'; timeColor = 'bg-red-50 text-red-800 border-red-300'; }
+    else { timeMsg = '🚨 出生後 ' + fmt(hours) + ' 時間：腸管が閉じており、IgGはほぼ吸収されません。移行免疫の確保は期待できないため、血漿輸注など獣医師へ相談を。'; timeColor = 'bg-red-100 text-red-900 border-red-400'; }
+
+    out.push('<div class="rounded-2xl border-2 ' + timeColor + ' p-4 font-bold leading-relaxed">' + timeMsg + '</div>');
+
+    /* ── 必要IgG量サマリー ──────────────────────── */
+    var needTotalIgG = needAbsorbed / abs;   // 飲ませるべきIgG総量(g)
+    out.push(
+      '<div class="bg-slate-800 text-white rounded-2xl p-4 grid grid-cols-3 gap-2 text-center">' +
+        '<div><div class="text-[11px] text-slate-300">目標血清IgG</div><div class="text-xl font-bold">' + target + ' g/L</div></div>' +
+        '<div><div class="text-[11px] text-slate-300">推定吸収率</div><div class="text-xl font-bold">' + fmt(abs * 100, 0) + ' %</div></div>' +
+        '<div><div class="text-[11px] text-slate-300">必要IgG総量</div><div class="text-xl font-bold">' + fmt(needTotalIgG, 0) + ' g</div></div>' +
+      '</div>'
+    );
+
+    /* ── ① Brix 22％未満：初乳製剤 ─────────────── */
+    if (brix < 22) {
+      var bags = Math.ceil(needTotalIgG / bagIgG);
+      if (bags < 1) bags = 1;
+
+      out.push(card('border-red-500',
+        '<div class="p-5">' +
+          '<div class="text-red-600 font-bold text-lg">⚠️ Brix 22%未満です。品質が不足しています</div>' +
+          '<p class="text-sm text-slate-600 mt-1">この初乳だけでは目標の血清IgGに届きません。初乳製剤で補ってください。</p>' +
+          '<div class="mt-5 text-center">' +
+            '<div class="text-sm font-bold text-slate-500">給与するもの</div>' +
+            '<div class="text-2xl font-bold text-slate-800 mt-1">初乳製剤</div>' +
+            '<div class="text-7xl font-black text-red-600 leading-none mt-3">' + bags + '<span class="text-3xl font-bold ml-1">袋</span></div>' +
+            '<div class="text-sm text-slate-500 mt-3">1袋 ' + fmt(bagIgG, 0) + ' g IgG × ' + bags + '袋 ＝ 約' + fmt(bags * bagIgG, 0) + ' g IgG</div>' +
+          '</div>' +
+          '<div class="mt-5 bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-900 leading-relaxed">' +
+            '製品の指示どおりぬるま湯で溶き、<b>できるだけ早く</b>給与してください。1回で飲みきれない量になる場合は' + fmt(gap, 0) + '時間ほど空けて分けて与えます。' +
+          '</div>' +
+          (brix > 0 ?
+          '<div class="mt-3 bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-700 leading-relaxed">' +
+            '手元の初乳（Brix ' + fmt(brix) + '％・約' + fmt(conc, 0) + ' g/L）も<b>捨てずに一緒に</b>飲ませてください。製剤と合わせることでIgGの上乗せになります。' +
+          '</div>' : '') +
+        '</div>'
+      ));
+
+      $('result').innerHTML = out.join('');
+      return;
+    }
+
+    /* ── ② Brix 22％以上：初乳量を計算（4L上限で分割） ── */
+    var remaining = needAbsorbed;   // まだ吸収させたいIgG量(g)
+    var t = hours;
+    var feeds = [];
+    var i;
+    for (i = 0; i < MAX_FEEDS && remaining > 0.01; i++) {
+      var a = aea(t);
+      var vol = remaining / (conc * a);
+      var give = Math.min(vol, MAX_FEED);
+      feeds.push({ at: t, vol: give, capped: vol > MAX_FEED });
+      remaining -= give * conc * a;
+      t += gap;
+      if (t >= CLOSURE_H) break;   // 腸管閉鎖後は追加しても意味がない
+    }
+
+    var total = feeds.reduce(function (s, f) { return s + f.vol; }, 0);
+    var achieved = (needAbsorbed - Math.max(0, remaining)) / plasma;   // 到達見込み血清IgG(g/L)
+
+    var head =
+      '<div class="p-5 text-center">' +
+        '<div class="text-sm font-bold text-slate-500">いますぐ飲ませる量</div>' +
+        '<div class="text-7xl font-black text-teal-600 leading-none mt-2">' + fmt(feeds[0].vol) + '<span class="text-3xl font-bold ml-1">L</span></div>' +
+        '<div class="text-sm text-slate-500 mt-3">初乳 Brix ' + fmt(brix) + '％（推定IgG 約' + fmt(conc, 0) + ' g/L）</div>' +
+      '</div>';
+
+    var sched = '';
+    if (feeds.length > 1) {
+      sched += '<div class="bg-slate-50 border-t border-slate-200 p-5">' +
+               '<div class="font-bold text-slate-700 mb-3">📋 分割給与スケジュール（1回4Lまで）</div><ol class="space-y-2">';
+      for (i = 0; i < feeds.length; i++) {
+        var f = feeds[i];
+        var when = (i === 0) ? 'いますぐ' : fmt(f.at - hours, 0) + '時間後';
+        sched += '<li class="flex items-center gap-3 bg-white rounded-xl border border-slate-200 p-3">' +
+                   '<span class="bg-teal-600 text-white font-bold rounded-full w-8 h-8 flex items-center justify-center shrink-0">' + (i + 1) + '</span>' +
+                   '<span class="font-bold text-slate-700 w-24 shrink-0">' + when + '</span>' +
+                   '<span class="text-2xl font-black text-teal-700">' + fmt(f.vol) + ' L</span>' +
+                   '<span class="text-xs text-slate-400 ml-auto">生後' + fmt(f.at, 0) + 'h</span>' +
+                 '</li>';
+      }
+      sched += '</ol>' +
+               '<p class="text-sm text-slate-600 mt-3 leading-relaxed">合計 <b>' + fmt(total) + ' L</b>。' +
+               '時間がたつほど吸収が落ちるため、2回目以降は多めの量になっています。<b>間隔はできるだけ詰めて</b>ください。</p>' +
+               '</div>';
+    } else {
+      sched += '<div class="bg-slate-50 border-t border-slate-200 p-5 text-sm text-slate-600 leading-relaxed">' +
+               'この量なら<b>1回で給与できます</b>。哺乳瓶で飲みきれない場合は食道カテーテルを使ってください。</div>';
+    }
+
+    var warn = '';
+    if (remaining > 0.01) {
+      warn = '<div class="bg-red-50 border-t border-red-200 p-5 text-sm text-red-800 leading-relaxed font-bold">' +
+             '🚨 4L×' + feeds.length + '回でも目標の ' + target + ' g/L には届きません（到達見込み 約' + fmt(achieved) + ' g/L）。' +
+             'より高Brixの初乳への変更、初乳製剤の併用、獣医師への相談を検討してください。</div>';
+    }
+
+    var plus =
+      '<div class="bg-teal-50 border-t border-teal-200 p-5">' +
+        '<div class="font-bold text-teal-800">💡 さらにおすすめ</div>' +
+        '<p class="text-sm text-teal-900 mt-2 leading-relaxed">' +
+          '初乳が十分に取れているのであれば、<b>さらに初乳を追加でたっぷりと飲ませることを推奨します</b>。' +
+          'IgGは多いに越したことはなく、下痢・肺炎の減少や増体・将来の乳量の向上につながります。' +
+          '1回4Lを超えない範囲で、2回目・3回目の給与でしっかり飲ませてください。' +
+        '</p>' +
+      '</div>';
+
+    out.push(card('border-teal-500', head + sched + warn + plus));
+
+    out.push(
+      '<div class="bg-white rounded-2xl shadow p-4 text-center text-sm text-slate-600">' +
+        '到達見込みの血清IgG：<b class="text-lg text-slate-800">約 ' + fmt(achieved) + ' g/L</b>' +
+        '（体重' + fmt(bw, 0) + 'kg・血漿量' + fmt(plasma) + 'Lとして計算）' +
+      '</div>'
+    );
+
+    $('result').innerHTML = out.join('');
+  }
+
+  /* イベント登録 */
+  ['hours', 'brix', 'bw', 'bagIgG', 'gap'].forEach(function (id) {
+    $(id).addEventListener('input', calc);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('input[name=target]'), function (el) {
+    el.addEventListener('change', calc);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.quick'), function (btn) {
+    btn.addEventListener('click', function () { $('hours').value = btn.dataset.h; calc(); });
+  });
+  $('brixRange').addEventListener('input', function () { $('brix').value = $('brixRange').value; calc(); });
+  $('brix').addEventListener('input', function () { $('brixRange').value = $('brix').value; });
+
+  calc();
+})();
+</script>
+</body>
+</html>
