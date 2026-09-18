@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>初乳給与量シミュレーター｜掲示用</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif;
+    color: #1e293b; background: #f1f5f9;
+  }
+  .sheet {
+    max-width: 720px; margin: 0 auto; background: #fff;
+    border: 3px solid #0f766e; border-radius: 16px; padding: 32px;
+  }
+  h1 { font-size: 34px; margin: 0 0 6px; color: #0f766e; text-align: center; line-height: 1.3; }
+  .lead { text-align: center; font-size: 18px; font-weight: bold; margin: 0 0 24px; }
+  .qrbox { text-align: center; margin: 0 0 8px; }
+  #qr { display: inline-block; padding: 12px; border: 2px solid #cbd5e1; border-radius: 12px; background: #fff; }
+  #qr img, #qr canvas { display: block; width: 260px; height: 260px; }
+  .url { text-align: center; font-size: 15px; word-break: break-all; margin: 8px 0 24px; }
+  .url a { color: #0f766e; font-weight: bold; }
+  h2 { font-size: 20px; margin: 24px 0 10px; padding-left: 10px; border-left: 6px solid #0f766e; }
+  ol, ul { margin: 0; padding-left: 24px; font-size: 16px; line-height: 1.9; }
+  .note { margin-top: 24px; padding: 14px 16px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px; line-height: 1.8; }
+  .print { display: block; max-width: 720px; margin: 20px auto 0; text-align: center; }
+  .print button { font-size: 16px; font-weight: bold; padding: 14px 28px; border-radius: 10px; border: 2px solid #0f766e; background: #0f766e; color: #fff; cursor: pointer; }
+  @media print {
+    body { background: #fff; padding: 0; }
+    .sheet { border: none; padding: 0; max-width: none; }
+    .print { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <h1>初乳給与量<br>シミュレーター</h1>
+  <p class="lead">子牛に「何を・どれだけ・いつ」飲ませるか、その場で計算</p>
+
+  <div class="qrbox"><div id="qr">読み込み中…</div></div>
+  <p class="url"><a id="link" href="https://hirokimakino0324.github.io/colostrum-calculator/">https://hirokimakino0324.github.io/colostrum-calculator/</a></p>
+
+  <h2>使い方</h2>
+  <ol>
+    <li>スマホのカメラでQRコードを読み取る</li>
+    <li>4つ答える（目標／生後何時間／初乳が何L取れたか／Brix）</li>
+    <li>画面の下に出る「いますぐ飲ませる量」のとおりに給与する</li>
+    <li>飲ませ終わったら、量を記録すると血清IgGの見込みが出る</li>
+  </ol>
+
+  <h2>ホーム画面に置くと、電波がなくても使えます</h2>
+  <ul>
+    <li><b>iPhone</b>：Safariで開く → 下の「共有」ボタン → 「ホーム画面に追加」</li>
+    <li><b>Android</b>：Chromeで開く → 右上の「︙」 → 「ホーム画面に追加」</li>
+  </ul>
+
+  <div class="note">
+    表示される数値は<b>目安</b>です。最終的な判断は獣医師・農場のプロトコルに従ってください。<br>
+    初乳製剤の1袋あたりIgG量は、「詳細設定」でお使いの製品の表示に合わせてください。
+  </div>
+</div>
+
+<div class="print"><button onclick="window.print()">この紙を印刷する</button></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  var url = document.getElementById('link').href;
+  var box = document.getElementById('qr');
+  box.textContent = '';
+  try {
+    new QRCode(box, { text: url, width: 260, height: 260, correctLevel: QRCode.CorrectLevel.M });
+  } catch (e) {
+    box.textContent = 'QRコードを表示できませんでした。上のURLを直接入力してください。';
+  }
+</script>
+</body>
+</html>

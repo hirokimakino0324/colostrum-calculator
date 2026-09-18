@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>初乳給与量シミュレーター</title>
 <meta name="theme-color" content="#0f766e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="初乳計算">
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif; }
@@ -325,35 +331,6 @@
 
   function sumVol(list) { return list.reduce(function (s, x) { return s + x.vol; }, 0); }
 
-  /* 初乳3Q（量）の達成状況パネル */
-  function qPanel(feeds, bw, hours, unit) {
-    var rows = '';
-    for (var i = 0; i < Q.length; i++) {
-      var q = Q[i];
-      var mn = bw * q.min, id = bw * q.ideal;
-      var cum = 0, j;
-      for (j = 0; j < feeds.length; j++) { if (feeds[j].at <= q.h + 1e-9) cum += feeds[j].vol; }
-      var judge, color;
-      if (hours > q.h) { judge = 'この時間は過ぎています'; color = 'bg-slate-100 text-slate-600'; }
-      else if (cum + 1e-9 >= id) { judge = '✅ 理想を達成'; color = 'bg-teal-50 text-teal-900'; }
-      else if (cum + 1e-9 >= mn) { judge = '🟡 最低はクリア（理想まであと ' + fmt(id - cum) + ' L）'; color = 'bg-amber-50 text-amber-900'; }
-      else { judge = '🔴 不足（あと ' + fmt(mn - cum) + ' L）'; color = 'bg-red-50 text-red-900'; }
-      rows +=
-        '<div class="' + color + ' rounded-xl border-2 border-slate-200 p-3">' +
-          '<div class="flex items-baseline justify-between gap-2">' +
-            '<span class="font-bold text-base">' + q.label + '</span>' +
-            '<span class="text-sm font-bold">最低 ' + fmt(mn) + ' L ／ 理想 ' + fmt(id) + ' L</span>' +
-          '</div>' +
-          '<div class="mt-1 text-base font-bold">このプラン：' + fmt(cum) + ' L　<span class="font-bold">' + judge + '</span></div>' +
-        '</div>';
-    }
-    return '<div class="bg-white rounded-2xl shadow border-2 border-slate-200 p-5">' +
-             '<div class="font-bold text-lg text-slate-800">🐄 初乳3Q「量」の目安（体重' + fmt(bw, 0) + 'kg）</div>' +
-             '<p class="text-sm text-slate-600 mt-1 leading-relaxed">体重比での累積給与量。' + unit + '</p>' +
-             '<div class="mt-3 space-y-2">' + rows + '</div>' +
-           '</div>';
-  }
-
   function calc() {
     var target = parseFloat(document.querySelector('input[name=target]:checked').value);
     var hours  = clampNum($('hours').value, 0, 72, 0);
@@ -465,7 +442,6 @@
         ''
       ));
 
-      out.push(qPanel(plist, bw, hours, '製剤を溶いた液量と手元の初乳を合わせた量で見ています。液量の目安であり、免疫の量はIgG（袋数）で決まります。'));
 
       setSticky('<span class="text-red-600">' + bags + '<span class="text-2xl font-bold ml-0.5">袋</span></span>');
       $('result').innerHTML = out.join('');
@@ -622,7 +598,6 @@
       '</div>';
 
     out.push(card(ng ? 'border-amber-500' : 'border-teal-500', head + sched + floorNote + warn + plus));
-    out.push(qPanel(items, bw, hours, '初乳と、製剤を溶いた液量を合わせた量で見ています。目標IgGの計算値がこれを下回る場合は、この量まで引き上げて表示しています。'));
 
     /* 専門的な数値は答えの下に */
     out.push(
@@ -790,6 +765,14 @@
   addRow(0.5, 3, 24, 0);
   run();
 })();
+</script>
+<script>
+  /* 圏外でも開けるようにキャッシュする（http(s) のときだけ有効） */
+  if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    });
+  }
 </script>
 </body>
 </html>
