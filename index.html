@@ -106,6 +106,21 @@
     <!-- 結果 -->
     <section id="result" class="space-y-4 scroll-mt-24"></section>
 
+    <!-- 実績入力 -->
+    <section class="bg-white rounded-2xl shadow border-2 border-slate-300 p-5">
+      <div class="flex items-start gap-2">
+        <span class="bg-slate-700 text-white text-base font-bold rounded-full w-8 h-8 flex items-center justify-center shrink-0">✓</span>
+        <div>
+          <h2 class="text-lg font-bold">実際に飲ませた量から血清IgGを予測</h2>
+          <p class="text-sm text-slate-600 mt-1 leading-relaxed">飲ませ終わったら記録してください。この子牛がどこまで免疫を得られたかの見込みが出ます。</p>
+        </div>
+      </div>
+      <div id="logRows" class="mt-4 space-y-3"></div>
+      <button type="button" id="addRow"
+              class="mt-3 w-full min-h-[52px] rounded-xl border-2 border-teal-600 text-teal-700 font-bold text-base bg-white active:bg-teal-50">＋ 給与を追加</button>
+      <div id="logResult" class="mt-4"></div>
+    </section>
+
     <!-- 詳細設定 -->
     <details class="bg-white rounded-2xl shadow border-2 border-slate-200 p-5">
       <summary class="font-bold cursor-pointer select-none min-h-[48px] flex items-center justify-between gap-2 text-lg">
@@ -140,8 +155,12 @@
         </div>
         <div>
           <label class="block text-base font-bold mb-1" for="gap">分割給与の間隔（時間）</label>
-          <input id="gap" type="number" inputmode="decimal" min="1" max="12" step="1" value="6"
+          <input id="gap" type="number" inputmode="decimal" min="4" max="12" step="1" value="8"
                  class="w-full border-2 border-slate-300 rounded-lg px-3 py-3 text-xl font-bold">
+          <p class="text-sm text-slate-600 mt-1 leading-relaxed">
+            <b class="text-red-700">8時間以上あけてください。</b>給与8時間後でも投与量の半分以上が第四胃に残っており
+            （Frederick ら 2025）、「4L＋6時間後に2L」で凝乳塊による疝痛死が報告されています（Sockett ら 2024）。
+          </p>
         </div>
       </div>
     </details>
@@ -155,7 +174,9 @@
       <ul class="list-disc pl-5 mt-3 space-y-2">
         <li>体内に入れたいIgG量(g) ＝ 目標血清IgG(g/L) × 血漿量(L)。血漿量は体重の9％（Quigley ら 1998, J Dairy Sci 81:1308）。</li>
         <li>初乳中IgG濃度(g/L) ≒ Brix(％) × 6.8 − 100。Brix 22％ ≒ 50 g/L、25％ ≒ 70 g/L、30％ ≒ 104 g/L（Sockett ら 2023, Front Vet Sci のカットオフに整合）。<b>Brix値からのIgG推定は誤差が大きく（±40 g/L級）、あくまで目安です。</b></li>
-        <li>吸収率(AEA)は出生直後を35％とし、12時間までゆるやかに、12時間以降は急速に低下、24時間で腸管が閉じるものとしています（Fischer ら 2018／Stott ら 1979）。</li>
+        <li>吸収率(AEA)は文献の実測点をつないでいます：0〜6時間は 51.8％→35.6％（Fischer ら 2018／DCHA Gold Standards 2023）、6〜12時間は約30％まで、12〜24時間で急落（Matte ら 1982 の減衰率）、24時間で腸管が閉じる（Stott ら 1979）。<b>実測のばらつきは大きく（7.7〜59.9％、平均28.1％：Halleran ら 2017）、個体差があります。</b></li>
+        <li><b>1回の給与量が増えるほど吸収効率は下がります</b>（体重比6％:47.8％→12％:36.3％、Frederick ら 2025, J Dairy Sci 108:13680）。この低下を計算に織り込んでいます。</li>
+        <li><b>分割の間隔は8時間以上。</b>給与8時間後でも投与量の半分以上が第四胃に残っており（Frederick ら 2025）、「4L＋6時間後に2L」で凝乳塊による疝痛死が報告されています（Sockett ら 2024）。</li>
         <li><b>初乳3Q（質・時間・量）の「量」の目安</b>：6時間以内に体重の5％以上（理想10％）、12時間以内に累計10％以上（理想15％）、24時間以内に累計15％以上（理想20％）。40kgの子牛なら 2〜4L → 累計4〜6L → 累計6〜8L。<b>目標IgGから計算した量がこの下限を下回る場合は、この量まで引き上げて表示します。</b></li>
         <li>1回の給与上限は 体重の10％（最大4L）。2回目以降は「そのときの下がった吸収率」で必要量を計算し直しています（2回目は6〜12時間後が推奨）。</li>
         <li><b>黒毛和種の初乳はホルスタインの約2倍のIgGを含む</b>という報告があり（北海道立畜産試験場 2005）、ホルスタイン由来のBrix換算式は和牛では過小評価になる可能性があります。</li>
@@ -190,8 +211,7 @@
   var MIN_FEED     = 0.5;    // 実務上意味のある最小給与量(L)
   var MAX_FEEDS    = 4;      // 分割の上限回数
   var CLOSURE_H    = 24;     // 腸管閉鎖の目安(時間)
-  var A12          = 0.35 * Math.exp(-0.075 * 10);   // 12時間時点の吸収率 ≒ 0.165
-  var K2           = Math.log(A12 / 0.03) / 12;      // 12→24時間の減衰係数 ≒ 0.142
+  var SAFE_GAP     = 8;      // これ未満の間隔は第四胃に前回分が残り危険（Sockett 2024）
 
   /* 初乳3Q：体重比での累積給与量の目安（6h / 12h / 24h） */
   var Q = [
@@ -204,12 +224,33 @@
 
   var $ = function (id) { return document.getElementById(id); };
 
-  /* 吸収率(AEA)：2h まで35％、12h までゆるやかに、12h 以降は急速に低下。24h で約3％。不連続なし */
+  /* 吸収率(AEA)：文献の実測点をつないだ区分モデル
+     0-6h  : 51.8% → 35.6%（Fischer ら 2018／DCHA Gold Standards 2023 Fig.5）
+     6-12h : 35.6% → 30%（Fischer は横ばい、Matte 1982・Osaka 2014 は低下。中間を採用）
+     12-24h: 指数的に急落（Matte 1982 の 12→24h 減衰率 0.117/h）、24h で約7％
+     24h〜 : 実質ゼロ（Matte 1982 の底値 6〜11％は見かけの値を含む） */
   function aea(t) {
-    if (t <= 2) return 0.35;
-    if (t <= 12) return 0.35 * Math.exp(-0.075 * (t - 2));
-    if (t < CLOSURE_H) return A12 * Math.exp(-K2 * (t - 12));
-    return Math.max(0.01, 0.03 * Math.exp(-0.1 * (t - CLOSURE_H)));
+    if (t <= 6) return 0.518 - 0.0324 * t;
+    if (t <= 12) return 0.356 - (0.356 - 0.30) * (t - 6) / 6;
+    if (t < CLOSURE_H) return 0.30 * Math.exp(-0.117 * (t - 12));
+    return Math.max(0.02, 0.0735 * Math.exp(-0.15 * (t - CLOSURE_H)));
+  }
+
+  /* 給与量が増えるほど吸収効率は下がる（Frederick ら 2025, J Dairy Sci 108:13680）
+     体重比 6%:47.8 / 8%:46.2 / 10%:41.0 / 12%:36.3 → 8%を1.0とした補正係数 */
+  function volFactor(p) {
+    var x = [0.06, 0.08, 0.10, 0.12], y = [1.035, 1.000, 0.887, 0.786], i;
+    if (p <= x[0]) return y[0];
+    if (p >= x[3]) return 0.75;
+    for (i = 0; i < 3; i++) {
+      if (p <= x[i + 1]) return y[i] + (y[i + 1] - y[i]) * (p - x[i]) / (x[i + 1] - x[i]);
+    }
+    return 0.75;
+  }
+
+  /* 実効吸収率：時刻と1回量の両方で決まる */
+  function aeaEff(t, volL, bw) {
+    return aea(t) * volFactor(volL / bw);
   }
 
   /* Brix → 初乳中IgG濃度 (g/L)：22%≒50, 25%≒70, 30%≒104 */
@@ -287,6 +328,11 @@
              '<div class="font-bold text-lg text-slate-800">🐄 初乳3Q「量」の目安（体重' + fmt(bw, 0) + 'kg）</div>' +
              '<p class="text-sm text-slate-600 mt-1 leading-relaxed">体重比での累積給与量。' + unit + '</p>' +
              '<div class="mt-3 space-y-2">' + rows + '</div>' +
+             '<p class="text-sm text-slate-700 mt-3 leading-relaxed">' +
+               '※ <b>初乳として飲ませるのは累計 ' + fmt(bw * 0.15) + ' L（体重の15％）程度まで</b>にしてください。' +
+               '24時間で体重の20％という数字は、初乳のあとの移行乳・常乳を含めた1日の総哺乳量の目安です。' +
+               '初乳だけで大量に入れると第四胃に凝乳塊ができ、疝痛の原因になります（Sockett ら 2024）。' +
+             '</p>' +
            '</div>';
   }
 
@@ -297,7 +343,7 @@
     var bw     = clampNum($('bw').value, 15, 100, 40);
     var bagIgG = clampNum($('bagIgG').value, 10, 300, 100);
     var bagWat = clampNum($('bagWater').value, 0.5, 4, 2);
-    var gap    = clampNum($('gap').value, 1, 12, 6);
+    var gap    = clampNum($('gap').value, 4, 12, 8);
 
     var plasma       = bw * 0.09;            // 血漿量(L)
     var needAbsorbed = target * plasma;      // 体内に入れたいIgG量(g)
@@ -322,10 +368,11 @@
 
     /* ── 時間経過の警告 ───────────────────────── */
     var timeMsg, timeColor;
-    if (hours < 2)        { timeMsg = '生後 ' + fmt(hours) + ' 時間：吸収率がいちばん高い時間帯です（約' + fmt(abs0 * 100, 0) + '％）。いま飲ませれば確実に効きます。'; timeColor = 'bg-teal-50 text-teal-900 border-teal-400'; }
-    else if (hours < 6)   { timeMsg = '⚠️ 生後 ' + fmt(hours) + ' 時間：吸収率が下がり始めています（約' + fmt(abs0 * 100, 0) + '％）。急いでください。'; timeColor = 'bg-amber-50 text-amber-900 border-amber-400'; }
-    else if (hours < 12)  { timeMsg = '⚠️ 生後 ' + fmt(hours) + ' 時間：吸収率がかなり低下（約' + fmt(abs0 * 100, 0) + '％）。必要な量が大きく増えます。'; timeColor = 'bg-orange-50 text-orange-900 border-orange-400'; }
-    else if (hours < CLOSURE_H) { timeMsg = '🚨 生後 ' + fmt(hours) + ' 時間：ほとんど吸収できません（約' + fmt(abs0 * 100, 0) + '％）。目標到達は困難です。'; timeColor = 'bg-red-50 text-red-900 border-red-400'; }
+    var rel = fmt(abs0 / 0.518 * 100, 0);   // 出生直後を100％としたときの残り
+    if (hours < 2)        { timeMsg = '生後 ' + fmt(hours) + ' 時間：吸収率がいちばん高い時間帯です（約' + fmt(abs0 * 100, 0) + '％＝出生直後の' + rel + '％）。いま飲ませれば確実に効きます。'; timeColor = 'bg-teal-50 text-teal-900 border-teal-400'; }
+    else if (hours < 6)   { timeMsg = '⚠️ 生後 ' + fmt(hours) + ' 時間：吸収率が下がり始めています（約' + fmt(abs0 * 100, 0) + '％＝出生直後の' + rel + '％）。1時間ごとに約3ポイントずつ落ちます。急いでください。'; timeColor = 'bg-amber-50 text-amber-900 border-amber-400'; }
+    else if (hours < 12)  { timeMsg = '⚠️ 生後 ' + fmt(hours) + ' 時間：吸収率は出生直後の約' + rel + '％（' + fmt(abs0 * 100, 0) + '％）まで低下。必要な量が増えます。'; timeColor = 'bg-orange-50 text-orange-900 border-orange-400'; }
+    else if (hours < CLOSURE_H) { timeMsg = '🚨 生後 ' + fmt(hours) + ' 時間：ここから腸管の閉鎖が加速し、吸収率は出生直後の約' + rel + '％（' + fmt(abs0 * 100, 0) + '％）。量を増やしても取り返せません（Stott ら 1979）。'; timeColor = 'bg-red-50 text-red-900 border-red-400'; }
     else                  { timeMsg = '🚨 生後 ' + fmt(hours) + ' 時間：腸が閉じており、飲ませても抗体は吸収されません。'; timeColor = 'bg-red-100 text-red-900 border-red-500'; }
 
     out.push('<div class="rounded-2xl border-2 ' + timeColor + ' p-4 text-base font-bold leading-relaxed">' + timeMsg + '</div>');
@@ -353,9 +400,10 @@
     /* ── ① Brix 22％未満：初乳製剤で補う ──────────── */
     if (brix < 22) {
       var colVol = (brix > 0) ? maxFeed : 0;                 // 手元の初乳をまず飲ませる量
-      var fromCol = colVol * conc * abs0;                     // それで吸収できるIgG(g)
+      var absCol = aeaEff(hours, colVol > 0 ? colVol : maxFeed, bw);
+      var fromCol = colVol * conc * absCol;                   // それで吸収できるIgG(g)
       var shortfall = Math.max(0, needAbsorbed - fromCol);    // 足りない分(g)
-      var bags = Math.max(1, Math.ceil(shortfall / (bagIgG * abs0)));
+      var bags = Math.max(1, Math.ceil(shortfall / (bagIgG * absCol)));
 
       var totalLiquid = colVol + bags * bagWat;
       var times = Math.max(1, Math.ceil(totalLiquid / maxFeed));
@@ -408,11 +456,12 @@
     var feeds = [];
     var i;
     for (i = 0; i < MAX_FEEDS && remaining > 0.01 && t < CLOSURE_H; i++) {
-      var a = aea(t);
-      var vol = remaining / (conc * a);
+      var vol = remaining / (conc * aea(t));
+      var it;
+      for (it = 0; it < 3; it++) { vol = remaining / (conc * aeaEff(t, Math.min(maxFeed, vol), bw)); }
       var give = Math.min(maxFeed, Math.max(MIN_FEED, vol));
       feeds.push({ at: t, vol: give });
-      remaining -= give * conc * a;
+      remaining -= give * conc * aeaEff(t, give, bw);
       t += gap;
     }
     if (feeds.length === 0) { feeds.push({ at: hours, vol: MIN_FEED }); remaining = 0; }
@@ -422,7 +471,7 @@
     var floorFirst = Math.min(maxFeed, bw * FLOOR_FIRST);
     var floorTotal = bw * FLOOR_TOTAL;
     if (feeds[0].vol < floorFirst) {
-      remaining -= (floorFirst - feeds[0].vol) * conc * aea(feeds[0].at);
+      remaining -= (floorFirst - feeds[0].vol) * conc * aeaEff(feeds[0].at, floorFirst, bw);
       feeds[0].vol = floorFirst;
     }
     var guard = 0;
@@ -432,13 +481,13 @@
       if (idx >= 0) {
         var add = Math.min(maxFeed - feeds[idx].vol, floorTotal - sumVol(feeds));
         feeds[idx].vol += add;
-        remaining -= add * conc * aea(feeds[idx].at);
+        remaining -= add * conc * aeaEff(feeds[idx].at, feeds[idx].vol, bw);
       } else {
         var nt = feeds[feeds.length - 1].at + gap;
         if (feeds.length >= MAX_FEEDS || nt >= CLOSURE_H) break;
         var add2 = Math.max(MIN_FEED, Math.min(maxFeed, floorTotal - sumVol(feeds)));
         feeds.push({ at: nt, vol: add2 });
-        remaining -= add2 * conc * aea(nt);
+        remaining -= add2 * conc * aeaEff(nt, add2, bw);
       }
     }
     var floorApplied = sumVol(feeds) > igGonly + 0.05;
@@ -459,7 +508,10 @@
     var plist2 = feeds.map(function (f) { return { at: f.at, label: fmt(f.vol) + '<span class="text-lg ml-0.5">L</span>' }; });
     var sched = (feeds.length > 1)
       ? schedule(plist2, hours, '分割給与スケジュール（1回 ' + fmt(maxFeed) + ' L まで）',
-          '合計 <b>' + fmt(total) + ' L</b>。時間がたつほど吸収が落ちるため、2回目以降は多めの量になっています。<b>間隔はできるだけ詰めて</b>ください。')
+          '合計 <b>' + fmt(total) + ' L</b>。' +
+          (gap < SAFE_GAP
+            ? '<b class="text-red-700">⚠️ 間隔が ' + fmt(gap, 0) + ' 時間では短すぎます。前回分が第四胃に残ったまま次を入れると凝乳塊ができ、疝痛の原因になります。8時間以上あけてください。</b>'
+            : '前回分が第四胃から出るのを待つため、<b>間隔は8時間以上</b>あけています。'))
       : '<div class="bg-slate-50 border-t-2 border-slate-200 p-5 text-base text-slate-800 leading-relaxed">' +
         'この量なら<b>1回で給与できます</b>。飲みきれない場合は食道カテーテルを使ってください。</div>';
 
@@ -516,9 +568,90 @@
     $('result').innerHTML = out.join('');
   }
 
+  /* ── 実績入力：実際に飲ませた量から血清IgGを予測 ───────── */
+  var rowSeq = 0;
+
+  function rowHTML(h, v, kind, x) {
+    rowSeq++;
+    return '<div class="logrow border-2 border-slate-200 rounded-xl p-3 bg-slate-50">' +
+      '<div class="flex gap-2">' +
+        '<label class="w-1/2"><span class="block text-sm font-bold text-slate-700">生後（時間）</span>' +
+          '<input class="r-h w-full mt-1 border-2 border-slate-300 rounded-lg px-2 py-2 text-xl font-bold text-center" type="number" inputmode="decimal" min="0" max="72" step="0.5" value="' + h + '"></label>' +
+        '<label class="w-1/2"><span class="block text-sm font-bold text-slate-700">飲ませた量（L）</span>' +
+          '<input class="r-v w-full mt-1 border-2 border-slate-300 rounded-lg px-2 py-2 text-xl font-bold text-center" type="number" inputmode="decimal" min="0" max="10" step="0.1" value="' + v + '"></label>' +
+      '</div>' +
+      '<div class="flex gap-2 mt-2 items-end">' +
+        '<label class="w-1/3"><span class="block text-sm font-bold text-slate-700">種類</span>' +
+          '<select class="r-k w-full mt-1 border-2 border-slate-300 rounded-lg px-1 py-2 text-base font-bold">' +
+            '<option value="col"' + (kind === 'col' ? ' selected' : '') + '>初乳</option>' +
+            '<option value="rep"' + (kind === 'rep' ? ' selected' : '') + '>製剤</option>' +
+          '</select></label>' +
+        '<label class="w-1/3"><span class="r-lab block text-sm font-bold text-slate-700">' + (kind === 'col' ? 'Brix（％）' : '袋数') + '</span>' +
+          '<input class="r-x w-full mt-1 border-2 border-slate-300 rounded-lg px-2 py-2 text-xl font-bold text-center" type="number" inputmode="decimal" min="0" max="35" step="0.5" value="' + x + '"></label>' +
+        '<button type="button" class="r-del w-1/3 min-h-[48px] rounded-lg border-2 border-slate-300 bg-white text-base font-bold text-slate-700">削除</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function addRow(h, v, kind, x) {
+    $('logRows').insertAdjacentHTML('beforeend', rowHTML(h, v, kind, x));
+    calcLog();
+  }
+
+  function calcLog() {
+    var bw     = clampNum($('bw').value, 15, 100, 40);
+    var bagIgG = clampNum($('bagIgG').value, 10, 300, 100);
+    var plasma = bw * 0.09;
+    var rows = document.querySelectorAll('#logRows .logrow');
+    var absorbed = 0, intake = 0, liquid = 0, i, warnFeed = false;
+
+    for (i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      var h = clampNum(r.querySelector('.r-h').value, 0, 72, 0);
+      var v = clampNum(r.querySelector('.r-v').value, 0, 10, 0);
+      var kind = r.querySelector('.r-k').value;
+      var x = clampNum(r.querySelector('.r-x').value, 0, 35, 0);
+      var lab = r.querySelector('.r-lab');
+      lab.textContent = (kind === 'col') ? 'Brix（％）' : '袋数';
+      var igG = (kind === 'col') ? v * igGfromBrix(x) : x * bagIgG;
+      intake += igG;
+      liquid += v;
+      absorbed += igG * aeaEff(h, v, bw);
+      if (v > bw * 0.10 + 0.01) warnFeed = true;
+    }
+
+    if (rows.length === 0) { $('logResult').innerHTML = ''; return; }
+
+    var serum = absorbed / plasma;
+    var grade, gc;
+    if (serum >= 25)      { grade = 'Excellent（最良）'; gc = 'bg-teal-600'; }
+    else if (serum >= 18) { grade = 'Good（良好）';      gc = 'bg-teal-500'; }
+    else if (serum >= 10) { grade = 'Fair（不十分）';    gc = 'bg-amber-500'; }
+    else                  { grade = 'Poor（移行免疫の失敗）'; gc = 'bg-red-600'; }
+
+    $('logResult').innerHTML =
+      '<div class="rounded-2xl border-2 border-slate-300 overflow-hidden">' +
+        '<div class="p-5 text-center bg-white">' +
+          '<div class="text-base font-bold text-slate-600">予測される血清IgG濃度</div>' +
+          '<div class="text-6xl font-black text-slate-800 leading-none mt-2">' + fmt(serum) + '<span class="text-2xl font-bold ml-1">g/L</span></div>' +
+          '<div class="inline-block mt-3 ' + gc + ' text-white font-bold text-base rounded-full px-4 py-2">' + grade + '</div>' +
+        '</div>' +
+        '<div class="bg-slate-50 border-t-2 border-slate-200 p-4 text-base text-slate-800 leading-relaxed">' +
+          '飲ませた液量 <b>' + fmt(liquid) + ' L</b>（体重の' + fmt(liquid / bw * 100, 0) + '％）／' +
+          '摂取IgG <b>' + fmt(intake, 0) + ' g</b> → 吸収 <b>' + fmt(absorbed, 0) + ' g</b>' +
+          '<div class="text-sm text-slate-600 mt-2">' +
+            '評価区分は Lombard ら 2020：Excellent ≥25／Good 18〜24.9／Fair 10〜17.9／Poor &lt;10 g/L。' +
+            '与えた時刻ごとの吸収率と、1回量による吸収効率の低下を織り込んだ推定値です。実測（生後2〜7日の血清TP・Brix）の代わりにはなりません。' +
+          '</div>' +
+          (warnFeed ? '<div class="mt-2 text-base font-bold text-red-700">⚠️ 1回に体重の10％を超える量を与えた記録があります。第四胃の凝乳塊・疝痛のリスクがあります。</div>' : '') +
+        '</div>' +
+      '</div>';
+  }
+
   function run() {
     try {
       calc();
+      calcLog();
     } catch (e) {
       $('result').innerHTML =
         '<div class="rounded-2xl border-2 border-red-400 bg-red-50 p-5 text-base font-bold text-red-900 leading-relaxed">' +
@@ -551,6 +684,22 @@
   $('bMinus').addEventListener('click', function () { stepField('brix', -0.5, 0, 35, 22); });
   $('bPlus').addEventListener('click',  function () { stepField('brix',  0.5, 0, 35, 22); });
 
+  $('addRow').addEventListener('click', function () {
+    var h = clampNum($('hours').value, 0, 72, 0);
+    var rows = document.querySelectorAll('#logRows .logrow');
+    var last = rows.length ? clampNum(rows[rows.length - 1].querySelector('.r-h').value, 0, 72, 0) + 8 : h;
+    addRow(Math.min(72, last), 2, 'col', clampNum($('brix').value, 0, 35, 24));
+  });
+  $('logRows').addEventListener('input', calcLog);
+  $('logRows').addEventListener('change', calcLog);
+  $('logRows').addEventListener('click', function (e) {
+    if (e.target && e.target.classList.contains('r-del')) {
+      var row = e.target.closest('.logrow');
+      if (row) { row.parentNode.removeChild(row); calcLog(); }
+    }
+  });
+
+  addRow(0.5, 3, 'col', 24);
   run();
 })();
 </script>
