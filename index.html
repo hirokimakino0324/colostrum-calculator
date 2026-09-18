@@ -153,11 +153,11 @@
         </div>
         <div>
           <label class="block text-base font-bold mb-1" for="gap">分割給与の間隔（時間）</label>
-          <input id="gap" type="number" inputmode="decimal" min="4" max="12" step="1" value="8"
+          <input id="gap" type="number" inputmode="decimal" min="2" max="12" step="1" value="4"
                  class="w-full border-2 border-slate-300 rounded-lg px-3 py-3 text-xl font-bold">
           <p class="text-sm text-slate-600 mt-1 leading-relaxed">
-            <b class="text-red-700">8時間以上あけてください。</b>給与から8時間たっても投与量の半分以上が第四胃に残っているため、
-            間隔が短いと凝乳塊ができやすくなります。
+            <b>あけすぎないでください。</b>時間がたつほど吸収率が落ちるため、自力で飲めるなら3〜4時間おきに詰めて構いません
+            （自然哺乳の子牛は1日5〜8回飲みます）。間隔が問題になるのは、自力で飲めない子牛にチューブで多量を続けて入れる場合だけです。
           </p>
         </div>
       </div>
@@ -174,7 +174,7 @@
         <li>初乳中IgG濃度(g/L) ≒ Brix(％) × 6.8 − 100。Brix 22％ ≒ 50 g/L、25％ ≒ 70 g/L、30％ ≒ 104 g/L（Sockett ら 2023, Front Vet Sci のカットオフに整合）。<b>Brix値からのIgG推定は誤差が大きく（±40 g/L級）、あくまで目安です。</b></li>
         <li>吸収率(AEA)は文献の実測点をつないでいます：0〜6時間は 51.8％→35.6％（Fischer ら 2018／DCHA Gold Standards 2023）、6〜12時間は約30％まで、12〜24時間で急落（Matte ら 1982 の減衰率）、24時間で腸管が閉じる（Stott ら 1979）。<b>実測のばらつきは大きく（7.7〜59.9％、平均28.1％：Halleran ら 2017）、個体差があります。</b></li>
         <li><b>1回の給与量が増えるほど吸収効率は下がります</b>（体重比6％:47.8％→12％:36.3％、Frederick ら 2025, J Dairy Sci 108:13680）。この低下を計算に織り込んでいます。</li>
-        <li><b>分割の間隔は8時間以上。</b>給与から8時間たっても投与量の半分以上が第四胃に残っているため（Frederick ら 2025）、間隔が短いと凝乳塊ができやすくなります。</li>
+        <li><b>分割の間隔はあけすぎないこと。</b>待つほど吸収率が落ちるため、自力で飲めるなら3〜4時間おきに詰めて構いません（自然哺乳の子牛は1日5〜8回飲みます）。食道カテーテルで体重の10％級を入れた場合は8時間後でも半分以上が第四胃に残るという報告があり（Frederick ら 2025）、<b>自力で飲めない子牛にチューブで多量を続けて入れる場合だけ</b>間隔に注意してください。</li>
         <li><b>初乳3Q（質・時間・量）の「量」の目安</b>：6時間以内に体重の5％以上（理想10％）、12時間以内に累計10％以上（理想15％）、24時間以内に累計15％以上（理想20％）。40kgの子牛なら 2〜4L → 累計4〜6L → 累計6〜8L。<b>目標IgGから計算した量がこの下限を下回る場合は、この量まで引き上げて表示します。</b></li>
         <li>1回の給与上限は 体重の10％（最大4L）。2回目以降は「そのときの下がった吸収率」で必要量を計算し直しています（2回目は6〜12時間後が推奨）。</li>
         <li><b>黒毛和種の初乳はホルスタインの約2倍のIgGを含む</b>という報告があり（北海道立畜産試験場 2005）、ホルスタイン由来のBrix換算式は和牛では過小評価になる可能性があります。</li>
@@ -209,7 +209,6 @@
   var MIN_FEED     = 0.5;    // 実務上意味のある最小給与量(L)
   var MAX_FEEDS    = 4;      // 分割の上限回数
   var CLOSURE_H    = 24;     // 腸管閉鎖の目安(時間)
-  var SAFE_GAP     = 8;      // これ未満の間隔は第四胃に前回分が残り危険（Sockett 2024）
 
   /* 初乳3Q：体重比での累積給与量の目安（6h / 12h / 24h） */
   var Q = [
@@ -341,7 +340,7 @@
     var bw     = clampNum($('bw').value, 15, 100, 40);
     var bagIgG = clampNum($('bagIgG').value, 10, 300, 100);
     var bagWat = clampNum($('bagWater').value, 0.5, 4, 2);
-    var gap    = clampNum($('gap').value, 4, 12, 8);
+    var gap    = clampNum($('gap').value, 2, 12, 4);
 
     var plasma       = bw * 0.09;            // 血漿量(L)
     var needAbsorbed = target * plasma;      // 体内に入れたいIgG量(g)
@@ -429,16 +428,14 @@
         '</div>' +
         schedule(plist, hours,
           '給与スケジュール（1回 ' + fmt(maxFeed) + ' L まで）',
-          '製剤1袋を ' + fmt(bagWat) + ' L で溶かす前提の液量です（合計 約' + fmt(totalLiquid) + ' L）。製品の指示どおりぬるま湯で溶き、<b>1回目はできるだけ早く</b>与えてください。') +
+          '製剤1袋を ' + fmt(bagWat) + ' L で溶かす前提の液量です（合計 約' + fmt(totalLiquid) + ' L）。製品の指示どおりぬるま湯で溶き、<b>1回目はできるだけ早く</b>与えてください。' +
+          (times > 1 ? '<br>待つほど吸収率が落ちるので、<b>間隔はあけすぎないでください</b>。' : '')) +
         (tooMany ?
         '<div class="bg-red-50 border-t-2 border-red-200 p-5 text-base text-red-900 font-bold leading-relaxed">' +
           '🚨 ' + bags + '袋は現実的に給与できる量ではありません。この時間・この品質では目標到達は困難です。' +
           'より良質な初乳（Brix 22％以上）の確保、または獣医師への相談を優先してください。' +
         '</div>' : '') +
-        '<div class="bg-slate-50 border-t-2 border-slate-200 p-5 text-base text-slate-800 leading-relaxed">' +
-          '💡 袋数は<b>製品ラベルのIgG量</b>で変わります。詳細設定で必ず確認してください。' +
-          '補助剤（サプリメント）は単独では免疫をつけられません。代用初乳（リプレーサー）を使ってください。' +
-        '</div>'
+        ''
       ));
 
       out.push(qPanel(plist, bw, hours, '製剤を溶いた液量と手元の初乳を合わせた量で見ています。液量の目安であり、免疫の量はIgG（袋数）で決まります。'));
@@ -507,9 +504,10 @@
     var sched = (feeds.length > 1)
       ? schedule(plist2, hours, '分割給与スケジュール（1回 ' + fmt(maxFeed) + ' L まで）',
           '合計 <b>' + fmt(total) + ' L</b>。' +
-          (gap < SAFE_GAP
-            ? '<b class="text-red-700">⚠️ 間隔が ' + fmt(gap, 0) + ' 時間では短すぎます。前回分が第四胃に残ったまま次を入れると凝乳塊ができ、疝痛の原因になります。8時間以上あけてください。</b>'
-            : '前回分が第四胃から出るのを待つため、<b>間隔は8時間以上</b>あけています。'))
+          '<b>間隔はあけすぎないでください。</b>待つほど吸収率が落ちるので、自力で飲めるなら早めに次を与えて構いません。' +
+          (feeds[0].vol >= bw * 0.09 && gap < 3
+            ? '<br><span class="text-amber-800 font-bold">※ 1回 ' + fmt(feeds[0].vol) + ' L と多めです。自力で飲めずチューブで入れる場合は、3時間以上あけてください。</span>'
+            : ''))
       : '<div class="bg-slate-50 border-t-2 border-slate-200 p-5 text-base text-slate-800 leading-relaxed">' +
         'この量なら<b>1回で給与できます</b>。飲みきれない場合は食道カテーテルを使ってください。</div>';
 
@@ -641,7 +639,7 @@
             '評価区分は Lombard ら 2020：Excellent ≥25／Good 18〜24.9／Fair 10〜17.9／Poor &lt;10 g/L。' +
             '与えた時刻ごとの吸収率と、1回量による吸収効率の低下を織り込んだ推定値です。実測（生後2〜7日の血清TP・Brix）の代わりにはなりません。' +
           '</div>' +
-          (warnFeed ? '<div class="mt-2 text-base font-bold text-red-700">⚠️ 1回に体重の10％を超える量を与えた記録があります。第四胃の凝乳塊・疝痛のリスクがあります。</div>' : '') +
+          (warnFeed ? '<div class="mt-2 text-base font-bold text-red-700">⚠️ 1回に体重の10％を超える量を与えた記録があります。</div>' : '') +
         '</div>' +
       '</div>';
   }
