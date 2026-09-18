@@ -73,6 +73,10 @@ https://hirokimakino0324.github.io/colostrum-calculator/
 
 リポジトリの Settings → Pages → Source は `main` ブランチのルートです。
 
+## 獣医師向け技術資料
+
+計算モデルの根拠、採用した文献、モデルの前提と限界は [獣医師向け技術資料.md](獣医師向け技術資料.md) にまとめています。他の獣医師に渡すときはこちらを併せて参照してください。
+
 ## 開発用サブエージェント
 
 `.claude/agents/` に、このアプリを保守するための Claude Code サブエージェント定義を置いています。
