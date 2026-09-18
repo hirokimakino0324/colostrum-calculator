@@ -536,29 +536,59 @@
     var ng = short > 0.01;                                     // 目標未達
     var addBags = ng ? Math.ceil(short / (bagIgG * abs0)) : 0;  // 併用すべき製剤の袋数
 
+    /* ── 初乳と製剤を1回ずつに割り付ける ───────────── */
+    var items = feeds.map(function (f) { return { at: f.at, col: f.vol, bags: 0 }; });
+    if (addBags > 0) {
+      var repLeft = addBags, q, room;
+      for (q = 0; q < items.length && repLeft > 0; q++) {
+        room = maxFeed - items[q].col;
+        while (repLeft > 0 && room >= bagWat - 0.01) { items[q].bags++; repLeft--; room -= bagWat; }
+      }
+      var at2 = items[items.length - 1].at;
+      while (repLeft > 0 && items.length < MAX_FEEDS + 2) {
+        at2 += gap;
+        var b = 0; room = maxFeed;
+        while (repLeft > 0 && room >= bagWat - 0.01) { b++; repLeft--; room -= bagWat; }
+        if (b === 0) break;
+        items.push({ at: at2, col: 0, bags: b });
+      }
+      if (repLeft > 0) { items[0].bags += repLeft; }
+    }
+    items.forEach(function (it) { it.vol = it.col + it.bags * bagWat; });
+    var totalLiq = items.reduce(function (s2, it) { return s2 + it.vol; }, 0);
+
+    function itemLabel(it) {
+      var parts = [];
+      if (it.col > 0.01) parts.push('初乳 ' + fmt(it.col) + ' L');
+      if (it.bags > 0) parts.push('<span class="text-red-600">製剤 ' + it.bags + ' 袋</span>');
+      return '<span class="text-2xl">' + parts.join(' ＋ ') + '</span>' +
+             (it.bags > 0 ? '<span class="block text-sm font-bold text-slate-600">液量 計 ' + fmt(it.vol) + ' L</span>' : '');
+    }
+
     var head =
       '<div class="p-5 text-center">' +
         '<div class="text-base font-bold text-slate-600">いますぐ飲ませる量</div>' +
-        '<div class="text-7xl font-black ' + (ng ? 'text-amber-600' : 'text-teal-600') + ' leading-none mt-2">' + fmt(feeds[0].vol) + '<span class="text-3xl font-bold ml-1">L</span></div>' +
+        '<div class="text-7xl font-black ' + (ng ? 'text-amber-600' : 'text-teal-600') + ' leading-none mt-2">' + fmt(items[0].col) + '<span class="text-3xl font-bold ml-1">L</span></div>' +
         '<div class="text-base text-slate-700 mt-3">初乳 Brix ' + fmt(brix) + '％（推定IgG 約' + fmt(conc, 0) + ' g/L）</div>' +
-        (ng && addBags > 0 ?
+        (items[0].bags > 0 ?
         '<div class="mt-4 pt-4 border-t-2 border-dashed border-slate-300">' +
           '<div class="text-base font-bold text-slate-600">＋ 一緒に飲ませる初乳製剤</div>' +
-          '<div class="text-6xl font-black text-red-600 leading-none mt-2">' + addBags + '<span class="text-3xl font-bold ml-1">袋</span></div>' +
-          '<div class="text-base text-slate-700 mt-2">1袋 ' + fmt(bagIgG, 0) + ' g IgG × ' + addBags + '袋</div>' +
+          '<div class="text-6xl font-black text-red-600 leading-none mt-2">' + items[0].bags + '<span class="text-3xl font-bold ml-1">袋</span></div>' +
+          '<div class="text-base text-slate-700 mt-2">1袋 ' + fmt(bagIgG, 0) + ' g IgG（' + fmt(bagWat) + ' L で溶く）</div>' +
+          '<div class="text-lg font-bold text-slate-800 mt-3">この回の液量 合計 ' + fmt(items[0].vol) + ' L</div>' +
         '</div>' : '') +
       '</div>';
 
-    var plist2 = feeds.map(function (f) { return { at: f.at, label: fmt(f.vol) + '<span class="text-lg ml-0.5">L</span>' }; });
-    var sched = (feeds.length > 1)
-      ? schedule(plist2, hours, '分割給与スケジュール（1回 ' + fmt(maxFeed) + ' L まで）',
-          '合計 <b>' + fmt(total) + ' L</b>。' +
+    var plist2 = items.map(function (it) { return { at: it.at, label: itemLabel(it) }; });
+    var sched = (items.length > 1)
+      ? schedule(plist2, hours, '給与スケジュール（1回 ' + fmt(maxFeed) + ' L まで）',
+          '液量の合計 <b>' + fmt(totalLiq) + ' L</b>。' +
           '<b>間隔はあけすぎないでください。</b>待つほど吸収率が落ちるので、自力で飲めるなら早めに次を与えて構いません。' +
-          (feeds[0].vol >= bw * 0.09 && gap < 3
-            ? '<br><span class="text-amber-800 font-bold">※ 1回 ' + fmt(feeds[0].vol) + ' L と多めです。自力で飲めずチューブで入れる場合は、3時間以上あけてください。</span>'
+          (items[0].vol >= bw * 0.09 && gap < 3
+            ? '<br><span class="text-amber-800 font-bold">※ 1回 ' + fmt(items[0].vol) + ' L と多めです。自力で飲めずチューブで入れる場合は、3時間以上あけてください。</span>'
             : ''))
       : '<div class="bg-slate-50 border-t-2 border-slate-200 p-5 text-base text-slate-800 leading-relaxed">' +
-        'この量なら<b>1回で給与できます</b>。飲みきれない場合は食道カテーテルを使ってください。</div>';
+        'この量なら<b>1回で給与できます</b>（液量 合計 ' + fmt(totalLiq) + ' L）。飲みきれない場合は食道カテーテルを使ってください。</div>';
 
     var warn = '';
     if (ng) {
@@ -592,7 +622,7 @@
       '</div>';
 
     out.push(card(ng ? 'border-amber-500' : 'border-teal-500', head + sched + floorNote + warn + plus));
-    out.push(qPanel(feeds, bw, hours, '「早く・たくさん」飲ませるための目安です。目標IgGの計算値がこれを下回る場合は、この量まで引き上げて表示しています。'));
+    out.push(qPanel(items, bw, hours, '初乳と、製剤を溶いた液量を合わせた量で見ています。目標IgGの計算値がこれを下回る場合は、この量まで引き上げて表示しています。'));
 
     /* 専門的な数値は答えの下に */
     out.push(
