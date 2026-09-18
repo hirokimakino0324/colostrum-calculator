@@ -80,10 +80,36 @@
       </div>
     </section>
 
-    <!-- Q3 Brix -->
+    <!-- Q3 取れた初乳の量 -->
     <section class="bg-white rounded-2xl shadow border-2 border-slate-200 p-5">
       <div class="flex items-start gap-2">
         <span class="bg-teal-600 text-white text-base font-bold rounded-full w-8 h-8 flex items-center justify-center shrink-0">3</span>
+        <div>
+          <h2 class="text-lg font-bold">初乳は何L取れましたか？</h2>
+          <p class="text-sm text-slate-600 mt-1 leading-relaxed">足りない分は初乳製剤で補う計算をします。</p>
+        </div>
+      </div>
+      <label class="flex items-center gap-3 mt-4 min-h-[52px] border-2 border-slate-300 rounded-xl px-4 bg-slate-50 cursor-pointer">
+        <input type="checkbox" id="availPlenty" checked class="w-6 h-6 accent-teal-600">
+        <span class="text-base font-bold text-slate-800">たっぷりある（量は気にしない）</span>
+      </label>
+      <div id="availWrap" class="hidden">
+        <div class="flex items-stretch gap-2 mt-3">
+          <button type="button" id="aMinus" aria-label="0.5Lへらす"
+                  class="w-[72px] min-h-[64px] shrink-0 rounded-xl border-2 border-slate-300 bg-slate-100 text-4xl font-black text-slate-700 active:bg-slate-300">−</button>
+          <input id="avail" type="number" inputmode="decimal" min="0" max="20" step="0.5" value="2"
+                 class="w-full text-4xl font-bold text-center border-2 border-slate-300 rounded-xl py-3 focus:border-teal-500 focus:outline-none">
+          <button type="button" id="aPlus" aria-label="0.5Lふやす"
+                  class="w-[72px] min-h-[64px] shrink-0 rounded-xl border-2 border-slate-300 bg-slate-100 text-4xl font-black text-slate-700 active:bg-slate-300">＋</button>
+        </div>
+        <p class="text-center text-lg font-bold text-slate-600 mt-1">L（搾れた初乳の合計）</p>
+      </div>
+    </section>
+
+    <!-- Q4 Brix -->
+    <section class="bg-white rounded-2xl shadow border-2 border-slate-200 p-5">
+      <div class="flex items-start gap-2">
+        <span class="bg-teal-600 text-white text-base font-bold rounded-full w-8 h-8 flex items-center justify-center shrink-0">4</span>
         <div>
           <h2 class="text-lg font-bold">初乳の濃さ（Brix）は？</h2>
           <p class="text-sm text-slate-600 mt-1 leading-relaxed">
@@ -336,6 +362,8 @@
     var bagIgG = clampNum($('bagIgG').value, 10, 300, 100);
     var bagWat = clampNum($('bagWater').value, 0.5, 4, 2);
     var gap    = clampNum($('gap').value, 2, 12, 4);
+    var avail  = $('availPlenty').checked ? Infinity : clampNum($('avail').value, 0, 20, 0);
+    $('availWrap').className = $('availPlenty').checked ? 'hidden' : '';
 
     var plasma       = bw * 0.09;            // 血漿量(L)
     var needAbsorbed = target * plasma;      // 体内に入れたいIgG量(g)
@@ -390,8 +418,9 @@
     }
 
     /* ── ① Brix 22％未満：初乳製剤で補う ──────────── */
-    if (brix < 22) {
-      var colVol = (brix > 0) ? maxFeed : 0;                 // 手元の初乳をまず飲ませる量
+    if (brix < 22 || avail < 0.1) {
+      var colVol = (brix > 0) ? Math.min(maxFeed, avail) : 0;   // 手元の初乳をまず飲ませる量
+      if (!isFinite(colVol)) colVol = maxFeed;
       var absCol = aeaEff(hours, colVol > 0 ? colVol : maxFeed, bw);
       var fromCol = colVol * conc * absCol;                   // それで吸収できるIgG(g)
       var shortfall = Math.max(0, needAbsorbed - fromCol);    // 足りない分(g)
@@ -407,8 +436,11 @@
 
       out.push(card(tooMany ? 'border-red-600' : 'border-amber-500',
         '<div class="p-5">' +
-          '<div class="text-red-700 font-bold text-xl leading-snug">⚠️ Brix 22%未満です。品質が不足しています</div>' +
-          '<p class="text-base text-slate-700 mt-2 leading-relaxed">この初乳だけでは目標の血清IgGに届きません。初乳製剤で補ってください。</p>' +
+          (brix < 22
+            ? '<div class="text-red-700 font-bold text-xl leading-snug">⚠️ Brix 22%未満です。品質が不足しています</div>' +
+              '<p class="text-base text-slate-700 mt-2 leading-relaxed">この初乳だけでは目標の血清IgGに届きません。初乳製剤で補ってください。</p>'
+            : '<div class="text-red-700 font-bold text-xl leading-snug">⚠️ 飲ませられる初乳がありません</div>' +
+              '<p class="text-base text-slate-700 mt-2 leading-relaxed">初乳製剤だけで免疫をつける必要があります。他の母牛の初乳やストックがあれば、そちらを優先してください。</p>') +
           '<div class="mt-5 text-center">' +
             '<div class="text-base font-bold text-slate-600">給与するもの</div>' +
             '<div class="text-2xl font-bold text-slate-800 mt-1">初乳製剤</div>' +
@@ -482,6 +514,22 @@
     }
     var floorApplied = sumVol(feeds) > igGonly + 0.05;
 
+    /* ── 取れた初乳の量で頭打ちにする ─────────────── */
+    var limited = false;
+    if (sumVol(feeds) > avail + 1e-9) {
+      limited = true;
+      var left = avail, kept = [], m;
+      for (m = 0; m < feeds.length; m++) {
+        var v = Math.min(feeds[m].vol, left);
+        if (v > 0.05) { kept.push({ at: feeds[m].at, vol: v }); left -= v; }
+      }
+      feeds = kept.length ? kept : [{ at: hours, vol: 0 }];
+      var got = 0;
+      for (m = 0; m < feeds.length; m++) { got += feeds[m].vol * conc * aeaEff(feeds[m].at, feeds[m].vol, bw); }
+      remaining = needAbsorbed - got;
+      floorApplied = false;
+    }
+
     var total = feeds.reduce(function (s, f) { return s + f.vol; }, 0);
     var short = Math.max(0, remaining);
     var achieved = (needAbsorbed - remaining) / plasma;   // 余分に飲ませた分は上乗せして表示
@@ -493,6 +541,12 @@
         '<div class="text-base font-bold text-slate-600">いますぐ飲ませる量</div>' +
         '<div class="text-7xl font-black ' + (ng ? 'text-amber-600' : 'text-teal-600') + ' leading-none mt-2">' + fmt(feeds[0].vol) + '<span class="text-3xl font-bold ml-1">L</span></div>' +
         '<div class="text-base text-slate-700 mt-3">初乳 Brix ' + fmt(brix) + '％（推定IgG 約' + fmt(conc, 0) + ' g/L）</div>' +
+        (ng && addBags > 0 ?
+        '<div class="mt-4 pt-4 border-t-2 border-dashed border-slate-300">' +
+          '<div class="text-base font-bold text-slate-600">＋ 一緒に飲ませる初乳製剤</div>' +
+          '<div class="text-6xl font-black text-red-600 leading-none mt-2">' + addBags + '<span class="text-3xl font-bold ml-1">袋</span></div>' +
+          '<div class="text-base text-slate-700 mt-2">1袋 ' + fmt(bagIgG, 0) + ' g IgG × ' + addBags + '袋</div>' +
+        '</div>' : '') +
       '</div>';
 
     var plist2 = feeds.map(function (f) { return { at: f.at, label: fmt(f.vol) + '<span class="text-lg ml-0.5">L</span>' }; });
@@ -510,8 +564,10 @@
     if (ng) {
       warn = '<div class="bg-red-50 border-t-2 border-red-200 p-5 text-base text-red-900 leading-relaxed">' +
              '<div class="font-bold text-lg">🚨 初乳だけでは目標 ' + target + ' g/L に届きません</div>' +
-             '<p class="mt-2 font-bold">この時間では吸収率が低く、' + fmt(maxFeed) + ' L × ' + feeds.length + '回を飲ませても到達見込みは約 ' + fmt(achieved) + ' g/L です。</p>' +
-             '<p class="mt-2">※ 生後24時間で腸が閉じるため、<b>残り時間が短いほど飲ませられる回数そのものが減ります</b>。合計量が少なく見えるのはそのためで、足りているという意味ではありません。</p>' +
+             (limited
+               ? '<p class="mt-2 font-bold">取れた初乳 ' + fmt(avail) + ' L をすべて飲ませても、到達見込みは約 ' + fmt(achieved) + ' g/L です（不足 IgG 約 ' + fmt(short, 0) + ' g）。</p>'
+               : '<p class="mt-2 font-bold">この時間では吸収率が低く、' + fmt(maxFeed) + ' L × ' + feeds.length + '回を飲ませても到達見込みは約 ' + fmt(achieved) + ' g/L です。</p>' +
+                 '<p class="mt-2">※ 生後24時間で腸が閉じるため、<b>残り時間が短いほど飲ませられる回数そのものが減ります</b>。合計量が少なく見えるのはそのためで、足りているという意味ではありません。</p>') +
              '<p class="mt-2 font-bold">1回目と一緒に <b class="text-2xl">初乳製剤 ' + addBags + ' 袋</b> を併用してください。' +
              'それでも不足する場合や、すでに生後12時間を過ぎている場合は獣医師に相談を。</p>' +
              '</div>';
@@ -555,7 +611,8 @@
       '</div>'
     );
 
-    setSticky(fmt(feeds[0].vol) + '<span class="text-2xl font-bold ml-0.5">L</span>');
+    setSticky(fmt(feeds[0].vol) + '<span class="text-2xl font-bold ml-0.5">L</span>' +
+      (ng && addBags > 0 ? '<span class="text-3xl text-red-600 ml-2">＋' + addBags + '<span class="text-xl font-bold">袋</span></span>' : ''));
     $('result').innerHTML = out.join('');
   }
 
@@ -661,7 +718,7 @@
     run();
   }
 
-  ['hours', 'brix', 'bw', 'bagIgG', 'bagWater', 'gap'].forEach(function (id) {
+  ['hours', 'brix', 'avail', 'bw', 'bagIgG', 'bagWater', 'gap'].forEach(function (id) {
     $(id).addEventListener('input', run);
   });
   Array.prototype.forEach.call(document.querySelectorAll('input[name=target]'), function (el) {
@@ -674,6 +731,9 @@
   $('hPlus').addEventListener('click',  function () { stepField('hours',  1, 0, 72, 0); });
   $('bMinus').addEventListener('click', function () { stepField('brix', -0.5, 0, 35, 22); });
   $('bPlus').addEventListener('click',  function () { stepField('brix',  0.5, 0, 35, 22); });
+  $('aMinus').addEventListener('click', function () { stepField('avail', -0.5, 0, 20, 2); });
+  $('aPlus').addEventListener('click',  function () { stepField('avail',  0.5, 0, 20, 2); });
+  $('availPlenty').addEventListener('change', run);
 
   $('addRow').addEventListener('click', function () {
     var h = clampNum($('hours').value, 0, 72, 0);
