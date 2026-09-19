@@ -19,6 +19,9 @@
   input[type=number] { -moz-appearance: textfield; }
   .seg:checked + label { background-color: #0d9488; color: #fff; border-color: #0d9488; box-shadow: 0 4px 10px rgba(13,148,136,.35); }
   .seg:checked + label .sub { color: #ccfbf1; }
+  /* 連続タップでのダブルタップズームを防ぐ（ピンチでの拡大は従来どおり可能） */
+  button, label, summary, select, input, .seg + label { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  button { -webkit-user-select: none; user-select: none; }
 </style>
 </head>
 <body class="bg-slate-100 text-slate-800">
@@ -215,7 +218,10 @@
       </ul>
     </details>
 
-    <p class="text-center text-sm text-slate-600 pt-2">初乳給与量シミュレーター</p>
+    <p class="text-center text-sm text-slate-600 pt-2 leading-relaxed">
+      初乳給与量シミュレーター<br>
+      <span class="font-bold">© LIGvets</span>
+    </p>
   </main>
 </div>
 
@@ -730,6 +736,20 @@
     run();
   }
 
+  /* スマホで素早く連続タップしてもダブルタップズームが起きないようにする */
+  function tapBind(el, fn) {
+    if (!el) return;
+    var touched = false, timer = null;
+    el.addEventListener('touchend', function (e) {
+      e.preventDefault();
+      touched = true;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(function () { touched = false; }, 700);
+      fn();
+    }, { passive: false });
+    el.addEventListener('click', function () { if (!touched) fn(); });
+  }
+
   ['hours', 'brix', 'avail', 'bw', 'bagIgG', 'bagWater', 'gap'].forEach(function (id) {
     $(id).addEventListener('input', run);
   });
@@ -737,17 +757,17 @@
     el.addEventListener('change', run);
   });
   Array.prototype.forEach.call(document.querySelectorAll('.quick'), function (btn) {
-    btn.addEventListener('click', function () { $('hours').value = btn.dataset.h; run(); });
+    tapBind(btn, function () { $('hours').value = btn.dataset.h; run(); });
   });
-  $('hMinus').addEventListener('click', function () { stepField('hours', -1, 0, 72, 0); });
-  $('hPlus').addEventListener('click',  function () { stepField('hours',  1, 0, 72, 0); });
-  $('bMinus').addEventListener('click', function () { stepField('brix', -0.5, 0, 35, 22); });
-  $('bPlus').addEventListener('click',  function () { stepField('brix',  0.5, 0, 35, 22); });
-  $('aMinus').addEventListener('click', function () { stepField('avail', -0.5, 0, 20, 2); });
-  $('aPlus').addEventListener('click',  function () { stepField('avail',  0.5, 0, 20, 2); });
+  tapBind($('hMinus'), function () { stepField('hours', -1, 0, 72, 0); });
+  tapBind($('hPlus'),  function () { stepField('hours',  1, 0, 72, 0); });
+  tapBind($('bMinus'), function () { stepField('brix', -0.5, 0, 35, 22); });
+  tapBind($('bPlus'),  function () { stepField('brix',  0.5, 0, 35, 22); });
+  tapBind($('aMinus'), function () { stepField('avail', -0.5, 0, 20, 2); });
+  tapBind($('aPlus'),  function () { stepField('avail',  0.5, 0, 20, 2); });
   $('availPlenty').addEventListener('change', run);
 
-  $('addRow').addEventListener('click', function () {
+  tapBind($('addRow'), function () {
     var h = clampNum($('hours').value, 0, 72, 0);
     var rows = document.querySelectorAll('#logRows .logrow');
     var last = rows.length ? clampNum(rows[rows.length - 1].querySelector('.r-h').value, 0, 72, 0) + 8 : h;

@@ -92,3 +92,7 @@ https://hirokimakino0324.github.io/colostrum-calculator/
 
 本アプリが示す値は**目安**です。最終的な判断は獣医師および農場のプロトコルに従ってください。
 初乳製剤の1袋あたりIgG量は、必ずお使いの製品の表示に合わせて設定してください。
+
+---
+
+© LIGvets
