@@ -138,6 +138,51 @@
       <p id="brixNote" class="text-base mt-2 font-bold"></p>
     </section>
 
+    <!-- Q5 凍結初乳 -->
+    <section class="bg-white rounded-2xl shadow border-2 border-slate-200 p-5">
+      <div class="flex items-start gap-2">
+        <span class="bg-sky-700 text-white text-base font-bold rounded-full w-8 h-8 flex items-center justify-center shrink-0">5</span>
+        <div>
+          <h2 class="text-lg font-bold">凍結初乳のストックはありますか？</h2>
+          <p class="text-sm text-slate-600 mt-1 leading-relaxed">あれば使います。<b>Brixの高いほうから先に</b>飲ませる計算をします。</p>
+        </div>
+      </div>
+      <label class="flex items-center gap-3 mt-4 min-h-[52px] border-2 border-slate-300 rounded-xl px-4 bg-slate-50 cursor-pointer">
+        <input type="checkbox" id="frozenUse" class="w-6 h-6 accent-sky-700">
+        <span class="text-base font-bold text-slate-800">凍結初乳を使う</span>
+      </label>
+      <div id="frozenWrap" class="hidden">
+        <p class="text-base font-bold text-slate-700 mt-4">解凍して使える量（L）</p>
+        <div class="flex items-stretch gap-2 mt-1">
+          <button type="button" id="fMinus" aria-label="0.5Lへらす"
+                  class="w-[72px] min-h-[64px] shrink-0 rounded-xl border-2 border-slate-300 bg-slate-100 text-4xl font-black text-slate-700 active:bg-slate-300">−</button>
+          <input id="frozenVol" type="number" inputmode="decimal" min="0" max="20" step="0.5" value="2"
+                 class="w-full text-4xl font-bold text-center border-2 border-slate-300 rounded-xl py-3 focus:border-sky-600 focus:outline-none">
+          <button type="button" id="fPlus" aria-label="0.5Lふやす"
+                  class="w-[72px] min-h-[64px] shrink-0 rounded-xl border-2 border-slate-300 bg-slate-100 text-4xl font-black text-slate-700 active:bg-slate-300">＋</button>
+        </div>
+        <p class="text-base font-bold text-slate-700 mt-4">その凍結初乳のBrix（％）</p>
+        <div class="grid grid-cols-4 gap-2 mt-1">
+          <button type="button" data-fb="22" class="fbq min-h-[52px] rounded-xl border-2 border-slate-300 bg-slate-100 text-base font-bold text-slate-800">22%</button>
+          <button type="button" data-fb="24" class="fbq min-h-[52px] rounded-xl border-2 border-slate-300 bg-slate-100 text-base font-bold text-slate-800">24%</button>
+          <button type="button" data-fb="26" class="fbq min-h-[52px] rounded-xl border-2 border-slate-300 bg-slate-100 text-base font-bold text-slate-800">26%</button>
+          <button type="button" data-fb="28" class="fbq min-h-[52px] rounded-xl border-2 border-slate-300 bg-slate-100 text-base font-bold text-slate-800">28%</button>
+        </div>
+        <div class="flex items-stretch gap-2 mt-2">
+          <button type="button" id="fbMinus" aria-label="Brixを0.5さげる"
+                  class="w-[72px] min-h-[64px] shrink-0 rounded-xl border-2 border-slate-300 bg-slate-100 text-4xl font-black text-slate-700 active:bg-slate-300">−</button>
+          <input id="frozenBrix" type="number" inputmode="decimal" min="0" max="35" step="0.5" value="26"
+                 class="w-full text-4xl font-bold text-center border-2 border-slate-300 rounded-xl py-3 focus:border-sky-600 focus:outline-none">
+          <button type="button" id="fbPlus" aria-label="Brixを0.5あげる"
+                  class="w-[72px] min-h-[64px] shrink-0 rounded-xl border-2 border-slate-300 bg-slate-100 text-4xl font-black text-slate-700 active:bg-slate-300">＋</button>
+        </div>
+        <p id="frozenNote" class="text-base mt-2 font-bold"></p>
+        <p class="text-sm text-slate-600 mt-2 leading-relaxed">
+          解凍は<b>50℃以下のぬるま湯</b>で。電子レンジや熱湯はIgGを壊します。凍結・解凍でIgGの一部は失われるため、上の値は搾ったときのBrixがわかればそれを入れてください。
+        </p>
+      </div>
+    </section>
+
     <!-- 結果 -->
     <section id="result" class="space-y-4 scroll-mt-24"></section>
 
@@ -347,6 +392,16 @@
     var gap    = clampNum($('gap').value, 2, 12, 4);
     var avail  = $('availPlenty').checked ? Infinity : clampNum($('avail').value, 0, 20, 0);
     $('availWrap').className = $('availPlenty').checked ? 'hidden' : '';
+    var useFz  = $('frozenUse').checked;
+    var fzVol  = useFz ? clampNum($('frozenVol').value, 0, 20, 0) : 0;
+    var fzBrix = clampNum($('frozenBrix').value, 0, 35, 0);
+    var fzConc = igGfromBrix(fzBrix);
+    $('frozenWrap').className = useFz ? '' : 'hidden';
+    var fzNote = $('frozenNote');
+    if (useFz) {
+      fzNote.textContent = (fzBrix >= 22 ? '✅ ' : '⚠️ ') + '推定IgG 約' + fmt(fzConc, 0) + ' g/L（' + fmt(fzVol) + ' L 分で IgG 約' + fmt(fzVol * fzConc, 0) + ' g）';
+      fzNote.className = 'text-base mt-2 font-bold ' + (fzBrix >= 22 ? 'text-teal-800' : 'text-red-700');
+    } else { fzNote.textContent = ''; }
 
     var plasma       = bw * 0.09;            // 血漿量(L)
     var needAbsorbed = target * plasma;      // 体内に入れたいIgG量(g)
@@ -401,7 +456,7 @@
     }
 
     /* ── ① Brix 22％未満：初乳製剤で補う ──────────── */
-    if (brix < 22 || avail < 0.1) {
+    if ((brix < 22 && fzVol < 0.1) || (avail < 0.1 && fzVol < 0.1)) {
       var colVol = (brix > 0) ? Math.min(maxFeed, avail) : 0;   // 手元の初乳をまず飲ませる量
       if (!isFinite(colVol)) colVol = maxFeed;
       var absCol = aeaEff(hours, colVol > 0 ? colVol : maxFeed, bw);
@@ -419,7 +474,7 @@
 
       out.push(card(tooMany ? 'border-red-600' : 'border-amber-500',
         '<div class="p-5">' +
-          (brix < 22
+          (brix < 22 && colVol > 0.05
             ? '<div class="text-red-700 font-bold text-xl leading-snug">⚠️ Brix 22%未満です。品質が不足しています</div>' +
               '<p class="text-base text-slate-700 mt-2 leading-relaxed">この初乳だけでは目標の血清IgGに届きません。初乳製剤で補ってください。</p>'
             : '<div class="text-red-700 font-bold text-xl leading-snug">⚠️ 飲ませられる初乳がありません</div>' +
@@ -454,63 +509,69 @@
       return;
     }
 
-    /* ── ② Brix 22％以上：初乳量を計算（分割） ────── */
+    /* ── ② 初乳量を計算（生初乳＋凍結初乳。Brixの高いほうから使う） ── */
+    var pool = [];
+    if (avail > 0.001 && conc > 0) pool.push({ vol: avail, conc: conc, kind: '初乳' });
+    if (fzVol > 0.001 && fzConc > 0) pool.push({ vol: fzVol, conc: fzConc, kind: '凍結初乳' });
+    pool.sort(function (x, y) { return y.conc - x.conc; });
+
+    function poolLeft() { return pool.reduce(function (s2, pp) { return s2 + pp.vol; }, 0); }
+    function bestConc() {
+      var c = 0, k;
+      for (k = 0; k < pool.length; k++) { if (pool[k].vol > 0.001 && pool[k].conc > c) c = pool[k].conc; }
+      return c;
+    }
+    function draw(v) {
+      var got = 0, igg = 0, parts = [], k;
+      for (k = 0; k < pool.length && got < v - 1e-9; k++) {
+        var take = Math.min(pool[k].vol, v - got);
+        if (take > 0.001) {
+          got += take; igg += take * pool[k].conc;
+          parts.push({ kind: pool[k].kind, vol: take });
+          pool[k].vol -= take;
+        }
+      }
+      return { vol: got, igG: igg, parts: parts };
+    }
+
+    var floorFirst = Math.min(maxFeed, bw * FLOOR_FIRST);
+    var floorTotal = bw * FLOOR_TOTAL;
     var remaining = needAbsorbed;
     var t = hours;
     var feeds = [];
-    var i;
-    for (i = 0; i < MAX_FEEDS && remaining > 0.01 && t < CLOSURE_H; i++) {
-      var vol = remaining / (conc * aea(t));
-      var it;
-      for (it = 0; it < 3; it++) { vol = remaining / (conc * aeaEff(t, Math.min(maxFeed, vol), bw)); }
-      var give = Math.min(maxFeed, Math.max(MIN_FEED, vol));
-      feeds.push({ at: t, vol: give });
-      remaining -= give * conc * aeaEff(t, give, bw);
+    var i, it;
+
+    /* IgG計算だけなら何L必要か（フロア適用の説明用） */
+    var c0 = bestConc();
+    var igGonly = 0;
+    if (c0 > 0) {
+      igGonly = needAbsorbed / (c0 * aea(hours));
+      for (it = 0; it < 3; it++) { igGonly = needAbsorbed / (c0 * aeaEff(hours, Math.min(maxFeed, igGonly), bw)); }
+    }
+
+    for (i = 0; i < MAX_FEEDS && t < CLOSURE_H; i++) {
+      if (remaining <= 0.01 && sumVol(feeds) >= floorTotal - 0.01) break;
+      if (poolLeft() < 0.05) break;
+      var bc = bestConc();
+      var want = 0;
+      if (remaining > 0.01 && bc > 0) {
+        want = remaining / (bc * aea(t));
+        for (it = 0; it < 3; it++) { want = remaining / (bc * aeaEff(t, Math.min(maxFeed, want), bw)); }
+      }
+      if (i === 0) want = Math.max(want, floorFirst);
+      want = Math.max(want, Math.min(maxFeed, floorTotal - sumVol(feeds)));
+      want = Math.min(maxFeed, Math.max(MIN_FEED, want));
+      var d = draw(want);
+      if (d.vol < 0.05) break;
+      feeds.push({ at: t, vol: d.vol, parts: d.parts });
+      remaining -= d.igG * aeaEff(t, d.vol, bw);
       t += gap;
     }
-    if (feeds.length === 0) { feeds.push({ at: hours, vol: MIN_FEED }); remaining = 0; }
+    if (feeds.length === 0) { feeds.push({ at: hours, vol: 0, parts: [] }); }
 
-    /* ── 初乳3Qフロア：IgG計算値が体重比の下限を下回る場合は引き上げる ── */
-    var igGonly = sumVol(feeds);
-    var floorFirst = Math.min(maxFeed, bw * FLOOR_FIRST);
-    var floorTotal = bw * FLOOR_TOTAL;
-    if (feeds[0].vol < floorFirst) {
-      remaining -= (floorFirst - feeds[0].vol) * conc * aeaEff(feeds[0].at, floorFirst, bw);
-      feeds[0].vol = floorFirst;
-    }
-    var guard = 0;
-    while (sumVol(feeds) < floorTotal - 0.01 && guard++ < 30) {
-      var idx = -1, j;
-      for (j = 0; j < feeds.length; j++) { if (feeds[j].vol < maxFeed - 0.01) { idx = j; break; } }
-      if (idx >= 0) {
-        var add = Math.min(maxFeed - feeds[idx].vol, floorTotal - sumVol(feeds));
-        feeds[idx].vol += add;
-        remaining -= add * conc * aeaEff(feeds[idx].at, feeds[idx].vol, bw);
-      } else {
-        var nt = feeds[feeds.length - 1].at + gap;
-        if (feeds.length >= MAX_FEEDS || nt >= CLOSURE_H) break;
-        var add2 = Math.max(MIN_FEED, Math.min(maxFeed, floorTotal - sumVol(feeds)));
-        feeds.push({ at: nt, vol: add2 });
-        remaining -= add2 * conc * aeaEff(nt, add2, bw);
-      }
-    }
-    var floorApplied = sumVol(feeds) > igGonly + 0.05;
-
-    /* ── 取れた初乳の量で頭打ちにする ─────────────── */
-    var limited = false;
-    if (sumVol(feeds) > avail + 1e-9) {
-      limited = true;
-      var left = avail, kept = [], m;
-      for (m = 0; m < feeds.length; m++) {
-        var v = Math.min(feeds[m].vol, left);
-        if (v > 0.05) { kept.push({ at: feeds[m].at, vol: v }); left -= v; }
-      }
-      feeds = kept.length ? kept : [{ at: hours, vol: 0 }];
-      var got = 0;
-      for (m = 0; m < feeds.length; m++) { got += feeds[m].vol * conc * aeaEff(feeds[m].at, feeds[m].vol, bw); }
-      remaining = needAbsorbed - got;
-      floorApplied = false;
-    }
+    var floorApplied = igGonly > 0 && sumVol(feeds) > igGonly + 0.05 && remaining <= 0.01;
+    var limited = remaining > 0.01 && poolLeft() < 0.05;
+    var availTotal = (isFinite(avail) ? avail : 0) + fzVol;
 
     var total = feeds.reduce(function (s, f) { return s + f.vol; }, 0);
     var short = Math.max(0, remaining);
@@ -519,7 +580,7 @@
     var addBags = ng ? Math.ceil(short / (bagIgG * abs0)) : 0;  // 併用すべき製剤の袋数
 
     /* ── 初乳と製剤を1回ずつに割り付ける ───────────── */
-    var items = feeds.map(function (f) { return { at: f.at, col: f.vol, bags: 0 }; });
+    var items = feeds.map(function (f) { return { at: f.at, col: f.vol, parts: f.parts || [], bags: 0 }; });
     if (addBags > 0) {
       var repLeft = addBags, q, room;
       for (q = 0; q < items.length && repLeft > 0; q++) {
@@ -532,7 +593,7 @@
         var b = 0; room = maxFeed;
         while (repLeft > 0 && room >= bagWat - 0.01) { b++; repLeft--; room -= bagWat; }
         if (b === 0) break;
-        items.push({ at: at2, col: 0, bags: b });
+        items.push({ at: at2, col: 0, parts: [], bags: b });
       }
       if (repLeft > 0) { items[0].bags += repLeft; }
     }
@@ -540,8 +601,13 @@
     var totalLiq = items.reduce(function (s2, it) { return s2 + it.vol; }, 0);
 
     function itemLabel(it) {
-      var parts = [];
-      if (it.col > 0.01) parts.push('初乳 ' + fmt(it.col) + ' L');
+      var parts = [], pk;
+      if (it.parts && it.parts.length) {
+        for (pk = 0; pk < it.parts.length; pk++) {
+          parts.push((it.parts[pk].kind === '凍結初乳' ? '<span class="text-sky-700">凍結初乳 ' : '初乳 ') +
+                     fmt(it.parts[pk].vol) + ' L' + (it.parts[pk].kind === '凍結初乳' ? '</span>' : ''));
+        }
+      } else if (it.col > 0.01) parts.push('初乳 ' + fmt(it.col) + ' L');
       if (it.bags > 0) parts.push('<span class="text-red-600">製剤 ' + it.bags + ' 袋</span>');
       return '<span class="text-2xl">' + parts.join(' ＋ ') + '</span>' +
              (it.bags > 0 ? '<span class="block text-sm font-bold text-slate-600">液量 計 ' + fmt(it.vol) + ' L</span>' : '');
@@ -551,7 +617,13 @@
       '<div class="p-5 text-center">' +
         '<div class="text-base font-bold text-slate-600">いますぐ飲ませる量</div>' +
         '<div class="text-7xl font-black ' + (ng ? 'text-amber-600' : 'text-teal-600') + ' leading-none mt-2">' + fmt(items[0].col) + '<span class="text-3xl font-bold ml-1">L</span></div>' +
-        '<div class="text-base text-slate-700 mt-3">初乳 Brix ' + fmt(brix) + '％（推定IgG 約' + fmt(conc, 0) + ' g/L）</div>' +
+        '<div class="text-base text-slate-700 mt-3">' + (function () {
+          var ps = items[0].parts || [], k, out2 = [];
+          for (k = 0; k < ps.length; k++) {
+            out2.push(ps[k].kind + ' ' + fmt(ps[k].vol) + ' L（Brix ' + fmt(ps[k].kind === '凍結初乳' ? fzBrix : brix) + '％・推定IgG 約' + fmt(ps[k].kind === '凍結初乳' ? fzConc : conc, 0) + ' g/L）');
+          }
+          return out2.length ? out2.join('<br>') : '初乳 Brix ' + fmt(brix) + '％（推定IgG 約' + fmt(conc, 0) + ' g/L）';
+        })() + '</div>' +
         (items[0].bags > 0 ?
         '<div class="mt-4 pt-4 border-t-2 border-dashed border-slate-300">' +
           '<div class="text-base font-bold text-slate-600">＋ 一緒に飲ませる初乳製剤</div>' +
@@ -577,7 +649,7 @@
       warn = '<div class="bg-red-50 border-t-2 border-red-200 p-5 text-base text-red-900 leading-relaxed">' +
              '<div class="font-bold text-lg">🚨 初乳だけでは目標 ' + target + ' g/L に届きません</div>' +
              (limited
-               ? '<p class="mt-2 font-bold">取れた初乳 ' + fmt(avail) + ' L をすべて飲ませても、到達見込みは約 ' + fmt(achieved) + ' g/L です（不足 IgG 約 ' + fmt(short, 0) + ' g）。</p>'
+               ? '<p class="mt-2 font-bold">手持ちの初乳 ' + fmt(availTotal) + ' L をすべて飲ませても、到達見込みは約 ' + fmt(achieved) + ' g/L です（不足 IgG 約 ' + fmt(short, 0) + ' g）。</p>'
                : '<p class="mt-2 font-bold">この時間では吸収率が低く、' + fmt(maxFeed) + ' L × ' + feeds.length + '回を飲ませても到達見込みは約 ' + fmt(achieved) + ' g/L です。</p>' +
                  '<p class="mt-2">※ 生後24時間で腸が閉じるため、<b>残り時間が短いほど飲ませられる回数そのものが減ります</b>。合計量が少なく見えるのはそのためで、足りているという意味ではありません。</p>') +
              '<p class="mt-2 font-bold">1回目と一緒に <b class="text-2xl">初乳製剤 ' + addBags + ' 袋</b> を併用してください。' +
@@ -750,7 +822,7 @@
     el.addEventListener('click', function () { if (!touched) fn(); });
   }
 
-  ['hours', 'brix', 'avail', 'bw', 'bagIgG', 'bagWater', 'gap'].forEach(function (id) {
+  ['hours', 'brix', 'avail', 'frozenVol', 'frozenBrix', 'bw', 'bagIgG', 'bagWater', 'gap'].forEach(function (id) {
     $(id).addEventListener('input', run);
   });
   Array.prototype.forEach.call(document.querySelectorAll('input[name=target]'), function (el) {
@@ -765,6 +837,14 @@
   tapBind($('bPlus'),  function () { stepField('brix',  0.5, 0, 35, 22); });
   tapBind($('aMinus'), function () { stepField('avail', -0.5, 0, 20, 2); });
   tapBind($('aPlus'),  function () { stepField('avail',  0.5, 0, 20, 2); });
+  tapBind($('fMinus'),  function () { stepField('frozenVol', -0.5, 0, 20, 2); });
+  tapBind($('fPlus'),   function () { stepField('frozenVol',  0.5, 0, 20, 2); });
+  tapBind($('fbMinus'), function () { stepField('frozenBrix', -0.5, 0, 35, 26); });
+  tapBind($('fbPlus'),  function () { stepField('frozenBrix',  0.5, 0, 35, 26); });
+  Array.prototype.forEach.call(document.querySelectorAll('.fbq'), function (btn) {
+    tapBind(btn, function () { $('frozenBrix').value = btn.dataset.fb; run(); });
+  });
+  $('frozenUse').addEventListener('change', run);
   $('availPlenty').addEventListener('change', run);
 
   tapBind($('addRow'), function () {
