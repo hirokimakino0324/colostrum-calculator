@@ -1,5 +1,5 @@
 /* 牛舎で電波が届かなくても開けるようにするためのキャッシュ */
-var CACHE = 'colostrum-v4';
+var CACHE = 'colostrum-v5';
 var ASSETS = [
   './',
   './index.html',

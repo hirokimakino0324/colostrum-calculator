@@ -33,6 +33,10 @@
       <h1 class="text-xl font-bold tracking-wide">初乳給与量シミュレーター</h1>
       <span id="farmName" class="hidden text-sm font-bold bg-white/20 rounded-lg px-2 py-1"></span>
     </div>
+    <div class="grid grid-cols-2 gap-2 mt-2">
+      <button type="button" id="langJa" class="langBtn min-h-[44px] rounded-lg border-2 text-base font-bold">日本語</button>
+      <button type="button" id="langNe" class="langBtn min-h-[44px] rounded-lg border-2 text-base font-bold">नेपाली</button>
+    </div>
   </header>
 
   <p class="px-5 pt-4 text-base font-bold text-slate-700">子牛に「何を・どれだけ・いつ」飲ませるかを計算します。</p>
@@ -316,6 +320,189 @@
 
   var $ = function (id) { return document.getElementById(id); };
 
+  /* ── 日本語 / ネパール語 ───────────────────────────── */
+  var LANG = 'ja';
+  var TXT = {
+    now:            { ja: 'いますぐ',                 ne: 'अहिले नै' },
+    feedNow:        { ja: 'いますぐ飲ませる量',       ne: 'अहिले नै खुवाउने मात्रा' },
+    hoursLater:     { ja: '{0}時間後',                ne: '{0} घण्टापछि' },
+    around:         { ja: '{0}ごろ',                  ne: '{0} तिर' },
+    L:              { ja: 'L',                        ne: 'लिटर' },
+    bag:            { ja: '袋',                       ne: 'प्याकेट' },
+    colostrum:      { ja: '初乳',                     ne: 'बिगौती' },
+    frozen:         { ja: '凍結初乳',                 ne: 'जमेको बिगौती' },
+    powder:         { ja: '製剤',                     ne: 'पाउडर' },
+    powderFull:     { ja: '初乳製剤',                 ne: 'बिगौती पाउडर' },
+    vetCall:        { ja: '獣医師へ連絡',             ne: 'पशु डाक्टरलाई फोन' },
+
+    /* 時間の警告 */
+    tm0:  { ja: '生後 {0} 時間：吸収率がいちばん高い時間帯です（約{1}％）。いま飲ませれば確実に効きます。',
+            ne: 'जन्मेको {0} घण्टा: सोस्ने दर सबैभन्दा राम्रो बेला हो (लगभग {1}%)। अहिले खुवाए राम्ररी काम गर्छ।' },
+    tm1:  { ja: '⚠️ 生後 {0} 時間：吸収率が下がり始めています（約{1}％）。急いでください。',
+            ne: '⚠️ जन्मेको {0} घण्टा: सोस्ने दर घट्न थालेको छ (लगभग {1}%)। छिटो खुवाउनुहोस्।' },
+    tm2:  { ja: '⚠️ 生後 {0} 時間：吸収率がかなり低下しています（約{1}％）。必要な量が増えます。',
+            ne: '⚠️ जन्मेको {0} घण्टा: सोस्ने दर धेरै घटेको छ (लगभग {1}%)। चाहिने मात्रा बढ्छ।' },
+    tm3:  { ja: '🚨 生後 {0} 時間：腸管の閉鎖が進み、吸収率は約{1}％です。量を増やしても取り返せません。',
+            ne: '🚨 जन्मेको {0} घण्टा: आन्द्रा बन्द हुँदैछ, सोस्ने दर लगभग {1}% मात्र। मात्रा बढाएर पनि पुर्‍याउन सकिँदैन।' },
+    tm4:  { ja: '🚨 生後 {0} 時間：腸が閉じており、飲ませても抗体は吸収されません。',
+            ne: '🚨 जन्मेको {0} घण्टा: आन्द्रा बन्द भइसक्यो, खुवाए पनि एन्टिबडी सोसिँदैन।' },
+
+    /* 24時間以降 */
+    lateTag:  { ja: '🚨 いまから飲ませても間に合いません', ne: '🚨 अब खुवाए पनि ढिलो भइसक्यो' },
+    lateBig:  { ja: '獣医師に<br>すぐ連絡',               ne: 'पशु डाक्टरलाई<br>तुरुन्तै फोन' },
+    lateBody: { ja: '生後24時間を過ぎ、腸が抗体を吸収できなくなっています。どれだけ初乳や製剤を飲ませても血清IgGは上がりません。血漿輸注などの処置が必要か相談してください。',
+                ne: 'जन्मेको 24 घण्टा नाघिसक्यो। आन्द्राले एन्टिबडी सोस्न सक्दैन। जति बिगौती वा पाउडर खुवाए पनि रगतको IgG बढ्दैन। प्लाज्मा दिनुपर्ने हो कि भनेर पशु डाक्टरसँग सल्लाह गर्नुहोस्।' },
+    lateFood: { ja: '栄養としては意味があるので、初乳やミルクを <b>{0} L</b> 程度飲ませて構いません（免疫の上乗せは期待できません）。',
+                ne: 'पोषणका लागि भने काम लाग्छ, त्यसैले बिगौती वा दूध <b>{0} लिटर</b> जति खुवाए हुन्छ (तर इम्युनिटी बढ्दैन)।' },
+
+    /* 製剤主体 */
+    lowTitle: { ja: '⚠️ Brix 22%未満です。品質が不足しています', ne: '⚠️ Brix 22% भन्दा कम छ। गुणस्तर पुगेन' },
+    lowBody:  { ja: 'この初乳だけでは目標の血清IgGに届きません。初乳製剤で補ってください。',
+                ne: 'यो बिगौती मात्रले लक्ष्यको IgG पुग्दैन। बिगौती पाउडरले पूर्ति गर्नुहोस्।' },
+    noneTitle:{ ja: '⚠️ 飲ませられる初乳がありません', ne: '⚠️ खुवाउने बिगौती छैन' },
+    noneBody: { ja: '初乳製剤だけで免疫をつける必要があります。他の母牛の初乳やストックがあれば、そちらを優先してください。',
+                ne: 'बिगौती पाउडरले मात्र इम्युनिटी दिनुपर्छ। अर्को गाईको बिगौती वा जमाएको बिगौती भए त्यो पहिले प्रयोग गर्नुहोस्।' },
+    giveWhat: { ja: '給与するもの', ne: 'के खुवाउने' },
+    bagCalc:  { ja: '1袋 {0} g IgG × {1}袋 ＝ 約{2} g IgG', ne: '1 प्याकेट {0} g IgG × {1} प्याकेट = लगभग {2} g IgG' },
+    alsoCol:  { ja: '＋ 手元の初乳（Brix {0}％・約{1} g/L）も <b>{2} L 一緒に</b>飲ませてください。この分（IgG 約{3} g）を差し引いたうえで袋数を出しています。',
+                ne: '+ हातमा भएको बिगौती (Brix {0}%, लगभग {1} g/L) पनि <b>{2} लिटर सँगै</b> खुवाउनुहोस्। यो मात्रा (IgG लगभग {3} g) घटाएर प्याकेट संख्या निकालिएको हो।' },
+    dissolve: { ja: '製剤1袋を {0} L で溶かす前提の液量です（合計 約{1} L）。製品の指示どおりぬるま湯で溶き、<b>1回目はできるだけ早く</b>与えてください。',
+                ne: '1 प्याकेट पाउडरलाई {0} लिटरमा घोल्ने हिसाब हो (जम्मा लगभग {1} लिटर)। निर्देशनअनुसार मनतातो पानीमा घोल्नुहोस्, <b>पहिलो पटक सकेसम्म चाँडो</b> खुवाउनुहोस्।' },
+    tooMany:  { ja: '🚨 {0}袋は現実的に給与できる量ではありません。この時間・この品質では目標到達は困難です。より良質な初乳（Brix 22％以上）の確保、または獣医師への相談を優先してください。',
+                ne: '🚨 {0} प्याकेट व्यवहारमा खुवाउन सकिने मात्रा होइन। यो समय र यो गुणस्तरमा लक्ष्य पुग्न गाह्रो छ। राम्रो बिगौती (Brix 22% माथि) खोज्नुहोस् वा पशु डाक्टरसँग सल्लाह गर्नुहोस्。' },
+
+    /* 結果カード */
+    schedTitle: { ja: '給与スケジュール（1回 {0} L まで）', ne: 'खुवाउने तालिका (एक पटकमा बढीमा {0} लिटर)' },
+    totalLiq:   { ja: '液量の合計 <b>{0} L</b>。', ne: 'जम्मा झोल <b>{0} लिटर</b>।' },
+    dontWait:   { ja: '<b>間隔はあけすぎないでください。</b>待つほど吸収率が落ちるので、自力で飲めるなら早めに次を与えて構いません。',
+                  ne: '<b>बीचको समय धेरै नछोड्नुहोस्।</b> पर्खँदा सोस्ने दर घट्छ; आफैं पिउन सक्छ भने चाँडै अर्को पटक खुवाए हुन्छ।' },
+    tubeWarn:   { ja: '※ 1回 {0} L と多めです。自力で飲めずチューブで入れる場合は、3時間以上あけてください。',
+                  ne: '※ एक पटकमा {0} लिटर धेरै हो। आफैं पिउन नसकेर ट्युबले दिने हो भने 3 घण्टाभन्दा बढी अन्तर राख्नुहोस्।' },
+    oneShot:    { ja: 'この量なら<b>1回で給与できます</b>（液量 合計 {0} L）。飲みきれない場合は食道カテーテルを使ってください。',
+                  ne: 'यति मात्रा <b>एकै पटक खुवाउन सकिन्छ</b> (जम्मा झोल {0} लिटर)। पिउन सकेन भने ट्युब प्रयोग गर्नुहोस्।' },
+    withPowder: { ja: '＋ 一緒に飲ませる初乳製剤', ne: '+ सँगै खुवाउने बिगौती पाउडर' },
+    bagUnit:    { ja: '1袋 {0} g IgG（{1} L で溶く）', ne: '1 प्याकेट {0} g IgG ({1} लिटरमा घोल्ने)' },
+    thisFeed:   { ja: 'この回の液量 合計 {0} L', ne: 'यस पटकको जम्मा झोल {0} लिटर' },
+    liqSum:     { ja: '液量 計 {0} L', ne: 'जम्मा झोल {0} लिटर' },
+    colBrix:    { ja: '{0} {1} L（Brix {2}％・推定IgG 約{3} g/L）', ne: '{0} {1} लिटर (Brix {2}%, अनुमानित IgG लगभग {3} g/L)' },
+
+    ngTitle:  { ja: '🚨 初乳だけでは目標 {0} g/L に届きません', ne: '🚨 बिगौती मात्रले लक्ष्य {0} g/L पुग्दैन' },
+    ngLimited:{ ja: '手持ちの初乳 {0} L をすべて飲ませても、到達見込みは約 {1} g/L です（不足 IgG 約 {2} g）。',
+                ne: 'हातमा भएको बिगौती {0} लिटर सबै खुवाउँदा पनि अनुमानित {1} g/L मात्र पुग्छ (IgG {2} g कम छ)।' },
+    ngTime:   { ja: 'この時間では吸収率が低く、{0} L × {1}回を飲ませても到達見込みは約 {2} g/L です。',
+                ne: 'यो बेला सोस्ने दर कम भएकाले {0} लिटर × {1} पटक खुवाउँदा पनि अनुमानित {2} g/L मात्र पुग्छ।' },
+    ngClose:  { ja: '※ 生後24時間で腸が閉じるため、<b>残り時間が短いほど飲ませられる回数そのものが減ります</b>。合計量が少なく見えるのはそのためで、足りているという意味ではありません。',
+                ne: '※ जन्मेको 24 घण्टामा आन्द्रा बन्द हुने भएकाले, <b>समय कम बाँकी भएमा खुवाउन मिल्ने पटक नै घट्छ</b>। जम्मा मात्रा कम देखिनुको कारण त्यही हो, पुगेको भनेको होइन।' },
+    ngBags:   { ja: '1回目と一緒に <b class="text-2xl">初乳製剤 {0} 袋</b> を併用してください。それでも不足する場合や、すでに生後12時間を過ぎている場合は獣医師に相談を。',
+                ne: 'पहिलो पटकसँगै <b class="text-2xl">बिगौती पाउडर {0} प्याकेट</b> पनि खुवाउनुहोस्। त्यसपछि पनि नपुगे वा जन्मेको 12 घण्टा नाघिसकेको भए पशु डाक्टरसँग सल्लाह गर्नुहोस्।' },
+
+    floorNote:{ ja: '📌 目標IgGの計算だけなら <b>{0} L</b> で足りますが、「6時間以内に体重の5％以上、24時間以内に累計15％以上」という現場の目安を下回るため、<b>{1} L</b> に引き上げています。初乳は多く飲ませて損はありません。',
+                ne: '📌 IgG को हिसाबले मात्र <b>{0} लिटर</b> पुग्थ्यो, तर "6 घण्टाभित्र तौलको 5% माथि, 24 घण्टाभित्र जम्मा 15% माथि" भन्ने व्यावहारिक मापदण्डभन्दा कम हुने भएकाले <b>{1} लिटर</b> मा बढाइएको छ। बिगौती धेरै खुवाउँदा हानि हुँदैन।' },
+    plusTitle:{ ja: '💡 さらにおすすめ', ne: '💡 थप सुझाव' },
+    plusBody: { ja: '初乳が十分に取れているのであれば、<b>さらに初乳を追加でたっぷりと飲ませることを推奨します</b>。IgGは多いに越したことはなく、下痢・肺炎の減少や増体・将来の乳量の向上につながります。理想は <b>24時間で累計 {0} L（体重の20％）</b>。1回 {1} L を超えない範囲で、2回目・3回目の給与でしっかり飲ませてください。',
+                ne: 'बिगौती प्रशस्त छ भने, <b>अझै थप बिगौती राम्रोसँग खुवाउन सिफारिस गरिन्छ</b>। IgG धेरै भए राम्रो हो — पखाला र निमोनिया घट्छ, बढ्ने दर र भविष्यको दूध उत्पादन पनि सुध्रन्छ। आदर्श भनेको <b>24 घण्टामा जम्मा {0} लिटर (तौलको 20%)</b> हो। एक पटकमा {1} लिटर ननाघ्ने गरी दोस्रो र तेस्रो पटकमा राम्ररी खुवाउनुहोस्।' },
+
+    statTarget:{ ja: '目標の血清IgG', ne: 'लक्ष्यको रगत IgG' },
+    statAea:   { ja: 'いまの吸収率',   ne: 'अहिलेको सोस्ने दर' },
+    statNeed:  { ja: '体内に入れたいIgG', ne: 'शरीरमा चाहिने IgG' },
+    achieved:  { ja: '到達見込みの血清IgG：', ne: 'पुग्ने अनुमानित रगत IgG:' },
+    approx:    { ja: '約 {0} g/L', ne: 'लगभग {0} g/L' },
+    calcBase:  { ja: '体重{0}kg・血漿量{1}L として計算', ne: 'तौल {0} kg, प्लाज्मा {1} लिटर मानेर हिसाब गरिएको' },
+    overEst:   { ja: '※ 大量に給与すると吸収効率そのものが下がる報告があるため、この値は上振れしている可能性があります。',
+                 ne: '※ धेरै मात्रा खुवाउँदा सोस्ने दर आफैं घट्ने रिपोर्ट भएकाले यो अनुमान बढी हुन सक्छ।' },
+
+    brixOk:   { ja: '✅ 合格ライン（推定IgG 約{0} g/L）', ne: '✅ ठीक छ (अनुमानित IgG लगभग {0} g/L)' },
+    brixLow:  { ja: '⚠️ 22％未満（推定IgG 約{0} g/L）品質不足です', ne: '⚠️ 22% भन्दा कम (अनुमानित IgG लगभग {0} g/L) — गुणस्तर पुगेन' },
+    brixNone: { ja: '初乳がない／測っていない場合は 0 のままでOK', ne: 'बिगौती छैन वा नापेको छैन भने 0 नै राख्नुहोस्' },
+    fzNote:   { ja: '推定IgG 約{0} g/L（{1} L 分で IgG 約{2} g）', ne: 'अनुमानित IgG लगभग {0} g/L ({1} लिटरमा IgG लगभग {2} g)' },
+    setNote:  { ja: '⚙️ この端末の設定：体重 {0} kg ／ 製剤1袋 {1} g IgG（{2} L で溶く）',
+                ne: '⚙️ यो फोनको सेटिङ: तौल {0} kg / 1 प्याकेट {1} g IgG ({2} लिटरमा घोल्ने)' }
+  };
+
+  function t(k) {
+    var e = TXT[k], s2 = e ? (e[LANG] || e.ja) : k, i2;
+    for (i2 = 1; i2 < arguments.length; i2++) { s2 = s2.split('{' + (i2 - 1) + '}').join(arguments[i2]); }
+    return s2;
+  }
+
+  /* 入力欄など固定文の対訳（テキストノード単位で置き換える） */
+  var STATIC = {
+    '子牛に「何を・どれだけ・いつ」飲ませるかを計算します。': 'बाछोलाई के, कति र कहिले खुवाउने भन्ने हिसाब गर्छ।',
+    'どこまで免疫をつけたい？': 'कति सम्म इम्युनिटी चाहिन्छ?',
+    '血清IgG': 'रगतको IgG',
+    '＝子牛の血液中の抗体（免疫）の量。高いほど下痢・肺炎になりにくい。': '= बाछोको रगतमा भएको एन्टिबडीको मात्रा। बढी भए पखाला र निमोनिया कम हुन्छ।',
+    '最低ライン': 'न्यूनतम',
+    'ふつうの目標': 'सामान्य लक्ष्य',
+    '最良': 'उत्तम',
+    '10 g/L 未満は「移行免疫の失敗」です。10 は目標ではなく': '10 g/L भन्दा कम भए इम्युनिटी असफल मानिन्छ। 10 भनेको लक्ष्य होइन,',
+    '下限': 'न्यूनतम हो',
+    '。ふだんは 20 以上を目指してください。': '। सामान्यतया 20 भन्दा माथि लक्ष्य राख्नुहोस्।',
+    '生まれてから何時間？': 'जन्मेको कति घण्टा भयो?',
+    '時間がたつほど腸から抗体を吸収できなくなります。': 'समय बित्दै जाँदा आन्द्राले एन्टिबडी सोस्न सक्दैन।',
+    '時間': 'घण्टा',
+    '初乳は何L取れましたか？': 'बिगौती कति लिटर निकाल्नुभयो?',
+    '足りない分は初乳製剤で補う計算をします。': 'नपुग भएको मात्रा बिगौती पाउडरले पूर्ति गर्ने हिसाब गरिन्छ।',
+    'たっぷりある（量は気にしない）': 'प्रशस्त छ (मात्रा चिन्ता छैन)',
+    'L（搾れた初乳の合計）': 'लिटर (जम्मा निकालेको बिगौती)',
+    '初乳の濃さ（Brix）は？': 'बिगौतीको गाढापन (Brix) कति हो?',
+    'Brix': 'Brix',
+    '＝屈折計で測る初乳の濃さ。': '= रिफ्र्याक्टोमिटरले नाप्ने बिगौतीको गाढापन।',
+    '22％以上が合格': '22% भन्दा माथि भए ठीक',
+    '。測っていない／初乳がないときは 0。': '। नापेको छैन वा बिगौती छैन भने 0 राख्नुहोस्।',
+    '％（ブリックス）': '% (ब्रिक्स)',
+    '凍結初乳のストックはありますか？': 'जमाएर राखेको बिगौती छ?',
+    'あれば使います。': 'भए प्रयोग गरिन्छ।',
+    'Brixの高いほうから先に': 'Brix बढी भएको पहिले',
+    '飲ませる計算をします。': 'खुवाउने हिसाब गरिन्छ।',
+    '凍結初乳を使う': 'जमेको बिगौती प्रयोग गर्ने',
+    '解凍して使える量（L）': 'पगालेर प्रयोग गर्न सकिने मात्रा (लिटर)',
+    'その凍結初乳のBrix（％）': 'त्यो जमेको बिगौतीको Brix (%)',
+    '解凍は': 'पगाल्दा',
+    '50℃以下のぬるま湯': '50℃ भन्दा कम मनतातो पानी',
+    'で。電子レンジや熱湯はIgGを壊します。凍結・解凍でIgGの一部は失われるため、上の値は搾ったときのBrixがわかればそれを入れてください。': 'प्रयोग गर्नुहोस्। माइक्रोवेभ र उम्लेको पानीले IgG नष्ट गर्छ। जमाउँदा र पगाल्दा केही IgG घट्ने भएकाले, माथिको मानमा दुहुँदाको Brix थाहा भए त्यही हाल्नुहोस्।',
+    'いますぐ': 'अहिले नै',
+    '飲ませる': 'खुवाउने',
+    'くわしく ↓': 'विस्तृत ↓'
+  };
+
+  function initStatic() {
+    var scope = [];
+    Array.prototype.forEach.call(document.querySelectorAll('main > section'), function (el, idx) { if (idx < 5) scope.push(el); });
+    scope.push(document.querySelector('main > p'));
+    scope.push($('stickyAnswer'));
+    var nodes = [];
+    function walk(n) {
+      if (!n) return;
+      if (n.nodeType === 3) { var v = n.nodeValue.trim(); if (v) nodes.push(n); }
+      else { Array.prototype.forEach.call(n.childNodes, walk); }
+    }
+    scope.forEach(walk);
+    nodes.forEach(function (n) { n.__ja = n.nodeValue; });
+    return nodes;
+  }
+  var STATIC_NODES = [];
+
+  function applyStatic() {
+    STATIC_NODES.forEach(function (n) {
+      var key = (n.__ja || '').trim();
+      if (LANG === 'ne' && STATIC[key]) { n.nodeValue = n.__ja.replace(key, STATIC[key]); }
+      else { n.nodeValue = n.__ja; }
+    });
+    $('langJa').className = 'langBtn min-h-[44px] rounded-lg border-2 text-base font-bold ' +
+      (LANG === 'ja' ? 'bg-white text-teal-800 border-white' : 'bg-transparent text-white border-white/50');
+    $('langNe').className = 'langBtn min-h-[44px] rounded-lg border-2 text-base font-bold ' +
+      (LANG === 'ne' ? 'bg-white text-teal-800 border-white' : 'bg-transparent text-white border-white/50');
+    document.documentElement.lang = (LANG === 'ne' ? 'ne' : 'ja');
+  }
+
+  function setLang(l) {
+    LANG = (l === 'ne') ? 'ne' : 'ja';
+    try { localStorage.setItem('colostrumLang', LANG); } catch (e) {}
+    applyStatic();
+    run();
+  }
+
+
   /* 吸収率(AEA)：文献の実測点をつないだ区分モデル
      0-6h  : 51.8% → 35.6%（Fischer ら 2018／DCHA Gold Standards 2023 Fig.5）
      6-12h : 35.6% → 30%（Fischer は横ばい、Matte 1982・Osaka 2014 は低下。中間を採用）
@@ -377,9 +564,9 @@
     for (var i = 0; i < list.length; i++) {
       var f = list[i];
       var when = (i === 0)
-        ? '<span class="block">いますぐ</span>'
-        : '<span class="block">' + fmt(f.at - hours, 0) + '時間後</span>' +
-          '<span class="block text-sm font-bold text-slate-600">' + clockAfter(f.at - hours) + 'ごろ</span>';
+        ? '<span class="block">' + t('now') + '</span>'
+        : '<span class="block">' + t('hoursLater', fmt(f.at - hours, 0)) + '</span>' +
+          '<span class="block text-sm font-bold text-slate-600">' + t('around', clockAfter(f.at - hours)) + '</span>';
       s += '<li class="flex items-center gap-3 bg-white rounded-xl border-2 border-slate-200 p-3">' +
              '<span class="bg-teal-600 text-white font-bold text-lg rounded-full w-10 h-10 flex items-center justify-center shrink-0">' + (i + 1) + '</span>' +
              '<span class="font-bold text-slate-800 text-base w-24 shrink-0">' + when + '</span>' +
@@ -411,7 +598,7 @@
     $('frozenWrap').className = useFz ? '' : 'hidden';
     var fzNote = $('frozenNote');
     if (useFz) {
-      fzNote.textContent = (fzBrix >= 22 ? '✅ ' : '⚠️ ') + '推定IgG 約' + fmt(fzConc, 0) + ' g/L（' + fmt(fzVol) + ' L 分で IgG 約' + fmt(fzVol * fzConc, 0) + ' g）';
+      fzNote.textContent = (fzBrix >= 22 ? '✅ ' : '⚠️ ') + t('fzNote', fmt(fzConc, 0), fmt(fzVol), fmt(fzVol * fzConc, 0));
       fzNote.className = 'text-base mt-2 font-bold ' + (fzBrix >= 22 ? 'text-teal-800' : 'text-red-700');
     } else { fzNote.textContent = ''; }
 
@@ -424,13 +611,13 @@
     /* Brixのメモ */
     var note = $('brixNote');
     if (brix >= 22) {
-      note.textContent = '✅ 合格ライン（推定IgG 約' + fmt(conc, 0) + ' g/L）';
+      note.textContent = t('brixOk', fmt(conc, 0));
       note.className = 'text-base mt-2 font-bold text-teal-800';
     } else if (brix > 0) {
-      note.textContent = '⚠️ 22％未満（推定IgG 約' + fmt(conc, 0) + ' g/L）品質不足です';
+      note.textContent = t('brixLow', fmt(conc, 0));
       note.className = 'text-base mt-2 font-bold text-red-700';
     } else {
-      note.textContent = '初乳がない／測っていない場合は 0 のままでOK';
+      note.textContent = t('brixNone');
       note.className = 'text-base mt-2 font-bold text-slate-600';
     }
 
@@ -439,11 +626,11 @@
     /* ── 時間経過の警告 ───────────────────────── */
     var timeMsg, timeColor;
     var rel = fmt(abs0 / 0.518 * 100, 0);   // 出生直後を100％としたときの残り
-    if (hours < 2)        { timeMsg = '生後 ' + fmt(hours) + ' 時間：吸収率がいちばん高い時間帯です（約' + fmt(abs0 * 100, 0) + '％＝出生直後の' + rel + '％）。いま飲ませれば確実に効きます。'; timeColor = 'bg-teal-50 text-teal-900 border-teal-400'; }
-    else if (hours < 6)   { timeMsg = '⚠️ 生後 ' + fmt(hours) + ' 時間：吸収率が下がり始めています（約' + fmt(abs0 * 100, 0) + '％＝出生直後の' + rel + '％）。1時間ごとに約3ポイントずつ落ちます。急いでください。'; timeColor = 'bg-amber-50 text-amber-900 border-amber-400'; }
-    else if (hours < 12)  { timeMsg = '⚠️ 生後 ' + fmt(hours) + ' 時間：吸収率は出生直後の約' + rel + '％（' + fmt(abs0 * 100, 0) + '％）まで低下。必要な量が増えます。'; timeColor = 'bg-orange-50 text-orange-900 border-orange-400'; }
-    else if (hours < CLOSURE_H) { timeMsg = '🚨 生後 ' + fmt(hours) + ' 時間：ここから腸管の閉鎖が加速し、吸収率は出生直後の約' + rel + '％（' + fmt(abs0 * 100, 0) + '％）。量を増やしても取り返せません（Stott ら 1979）。'; timeColor = 'bg-red-50 text-red-900 border-red-400'; }
-    else                  { timeMsg = '🚨 生後 ' + fmt(hours) + ' 時間：腸が閉じており、飲ませても抗体は吸収されません。'; timeColor = 'bg-red-100 text-red-900 border-red-500'; }
+    if (hours < 2)        { timeMsg = t('tm0', fmt(hours), fmt(abs0 * 100, 0)); timeColor = 'bg-teal-50 text-teal-900 border-teal-400'; }
+    else if (hours < 6)   { timeMsg = t('tm1', fmt(hours), fmt(abs0 * 100, 0)); timeColor = 'bg-amber-50 text-amber-900 border-amber-400'; }
+    else if (hours < 12)  { timeMsg = t('tm2', fmt(hours), fmt(abs0 * 100, 0)); timeColor = 'bg-orange-50 text-orange-900 border-orange-400'; }
+    else if (hours < CLOSURE_H) { timeMsg = t('tm3', fmt(hours), fmt(abs0 * 100, 0)); timeColor = 'bg-red-50 text-red-900 border-red-400'; }
+    else                  { timeMsg = t('tm4', fmt(hours)); timeColor = 'bg-red-100 text-red-900 border-red-500'; }
 
     out.push('<div class="rounded-2xl border-2 ' + timeColor + ' p-4 text-base font-bold leading-relaxed">' + timeMsg + '</div>');
 
@@ -451,18 +638,17 @@
     if (hours >= CLOSURE_H) {
       out.push(card('border-red-600',
         '<div class="p-5 text-center">' +
-          '<div class="inline-flex items-center gap-2 bg-red-600 text-white font-bold text-base rounded-full px-4 py-2">🚨 いまから飲ませても間に合いません</div>' +
-          '<div class="text-5xl font-black text-red-700 leading-tight mt-4">獣医師に<br>すぐ連絡</div>' +
+          '<div class="inline-flex items-center gap-2 bg-red-600 text-white font-bold text-base rounded-full px-4 py-2">' + t('lateTag') + '</div>' +
+          '<div class="text-5xl font-black text-red-700 leading-tight mt-4">' + t('lateBig') + '</div>' +
           '<p class="text-base font-bold text-slate-800 mt-4 leading-relaxed">' +
-            '生後24時間を過ぎ、腸が抗体を吸収できなくなっています。どれだけ初乳や製剤を飲ませても血清IgGは上がりません。' +
-            '血漿輸注などの処置が必要か相談してください。' +
+            t('lateBody') +
           '</p>' +
           '<div class="mt-4 bg-slate-50 border-2 border-slate-200 rounded-xl p-3 text-base text-slate-800 leading-relaxed text-left">' +
-            '栄養としては意味があるので、初乳やミルクを <b>' + fmt(maxFeed) + ' L</b> 程度飲ませて構いません（免疫の上乗せは期待できません）。' +
+            t('lateFood', fmt(maxFeed)) +
           '</div>' +
         '</div>'
       ));
-      setSticky('<span class="text-3xl text-red-700">獣医師へ連絡</span>');
+      setSticky('<span class="text-3xl text-red-700">' + t('vetCall') + '</span>');
       $('result').innerHTML = out.join('');
       return;
     }
@@ -487,44 +673,42 @@
       out.push(card(tooMany ? 'border-red-600' : 'border-amber-500',
         '<div class="p-5">' +
           (brix < 22 && colVol > 0.05
-            ? '<div class="text-red-700 font-bold text-xl leading-snug">⚠️ Brix 22%未満です。品質が不足しています</div>' +
-              '<p class="text-base text-slate-700 mt-2 leading-relaxed">この初乳だけでは目標の血清IgGに届きません。初乳製剤で補ってください。</p>'
-            : '<div class="text-red-700 font-bold text-xl leading-snug">⚠️ 飲ませられる初乳がありません</div>' +
-              '<p class="text-base text-slate-700 mt-2 leading-relaxed">初乳製剤だけで免疫をつける必要があります。他の母牛の初乳やストックがあれば、そちらを優先してください。</p>') +
+            ? '<div class="text-red-700 font-bold text-xl leading-snug">' + t('lowTitle') + '</div>' +
+              '<p class="text-base text-slate-700 mt-2 leading-relaxed">' + t('lowBody') + '</p>'
+            : '<div class="text-red-700 font-bold text-xl leading-snug">' + t('noneTitle') + '</div>' +
+              '<p class="text-base text-slate-700 mt-2 leading-relaxed">' + t('noneBody') + '</p>') +
           '<div class="mt-5 text-center">' +
-            '<div class="text-base font-bold text-slate-600">給与するもの</div>' +
-            '<div class="text-2xl font-bold text-slate-800 mt-1">初乳製剤</div>' +
-            '<div class="text-7xl font-black text-red-600 leading-none mt-3">' + bags + '<span class="text-3xl font-bold ml-1">袋</span></div>' +
-            '<div class="text-base text-slate-700 mt-3">1袋 ' + fmt(bagIgG, 0) + ' g IgG × ' + bags + '袋 ＝ 約' + fmt(bags * bagIgG, 0) + ' g IgG</div>' +
+            '<div class="text-base font-bold text-slate-600">' + t('giveWhat') + '</div>' +
+            '<div class="text-2xl font-bold text-slate-800 mt-1">' + t('powderFull') + '</div>' +
+            '<div class="text-7xl font-black text-red-600 leading-none mt-3">' + bags + '<span class="text-3xl font-bold ml-1">' + t('bag') + '</span></div>' +
+            '<div class="text-base text-slate-700 mt-3">' + t('bagCalc', fmt(bagIgG, 0), bags, fmt(bags * bagIgG, 0)) + '</div>' +
           '</div>' +
           (colVol > 0 ?
           '<div class="mt-5 bg-teal-50 border-2 border-teal-200 rounded-xl p-4 text-base text-teal-900 leading-relaxed">' +
-            '＋ 手元の初乳（Brix ' + fmt(brix) + '％・約' + fmt(conc, 0) + ' g/L）も <b>' + fmt(colVol) + ' L 一緒に</b>飲ませてください。' +
-            'この分（IgG 約' + fmt(colVol * conc, 0) + ' g）を差し引いたうえで袋数を出しています。' +
+            t('alsoCol', fmt(brix), fmt(conc, 0), fmt(colVol), fmt(colVol * conc, 0)) +
           '</div>' : '') +
         '</div>' +
         schedule(plist, hours,
-          '給与スケジュール（1回 ' + fmt(maxFeed) + ' L まで）',
-          '製剤1袋を ' + fmt(bagWat) + ' L で溶かす前提の液量です（合計 約' + fmt(totalLiquid) + ' L）。製品の指示どおりぬるま湯で溶き、<b>1回目はできるだけ早く</b>与えてください。' +
-          (times > 1 ? '<br>待つほど吸収率が落ちるので、<b>間隔はあけすぎないでください</b>。' : '')) +
+          t('schedTitle', fmt(maxFeed)),
+          t('dissolve', fmt(bagWat), fmt(totalLiquid)) +
+          (times > 1 ? '<br>' + t('dontWait') : '')) +
         (tooMany ?
         '<div class="bg-red-50 border-t-2 border-red-200 p-5 text-base text-red-900 font-bold leading-relaxed">' +
-          '🚨 ' + bags + '袋は現実的に給与できる量ではありません。この時間・この品質では目標到達は困難です。' +
-          'より良質な初乳（Brix 22％以上）の確保、または獣医師への相談を優先してください。' +
+          t('tooMany', bags) +
         '</div>' : '') +
         ''
       ));
 
 
-      setSticky('<span class="text-red-600">' + bags + '<span class="text-2xl font-bold ml-0.5">袋</span></span>');
+      setSticky('<span class="text-red-600">' + bags + '<span class="text-2xl font-bold ml-0.5">' + t('bag') + '</span></span>');
       $('result').innerHTML = out.join('');
       return;
     }
 
     /* ── ② 初乳量を計算（生初乳＋凍結初乳。Brixの高いほうから使う） ── */
     var pool = [];
-    if (avail > 0.001 && conc > 0) pool.push({ vol: avail, conc: conc, kind: '初乳' });
-    if (fzVol > 0.001 && fzConc > 0) pool.push({ vol: fzVol, conc: fzConc, kind: '凍結初乳' });
+    if (avail > 0.001 && conc > 0) pool.push({ vol: avail, conc: conc, kind: 'col' });
+    if (fzVol > 0.001 && fzConc > 0) pool.push({ vol: fzVol, conc: fzConc, kind: 'fz' });
     pool.sort(function (x, y) { return y.conc - x.conc; });
 
     function poolLeft() { return pool.reduce(function (s2, pp) { return s2 + pp.vol; }, 0); }
@@ -549,7 +733,7 @@
     var floorFirst = Math.min(maxFeed, bw * FLOOR_FIRST);
     var floorTotal = bw * FLOOR_TOTAL;
     var remaining = needAbsorbed;
-    var t = hours;
+    var ft = hours;
     var feeds = [];
     var i, it;
 
@@ -561,23 +745,23 @@
       for (it = 0; it < 3; it++) { igGonly = needAbsorbed / (c0 * aeaEff(hours, Math.min(maxFeed, igGonly), bw)); }
     }
 
-    for (i = 0; i < MAX_FEEDS && t < CLOSURE_H; i++) {
+    for (i = 0; i < MAX_FEEDS && ft < CLOSURE_H; i++) {
       if (remaining <= 0.01 && sumVol(feeds) >= floorTotal - 0.01) break;
       if (poolLeft() < 0.05) break;
       var bc = bestConc();
       var want = 0;
       if (remaining > 0.01 && bc > 0) {
-        want = remaining / (bc * aea(t));
-        for (it = 0; it < 3; it++) { want = remaining / (bc * aeaEff(t, Math.min(maxFeed, want), bw)); }
+        want = remaining / (bc * aea(ft));
+        for (it = 0; it < 3; it++) { want = remaining / (bc * aeaEff(ft, Math.min(maxFeed, want), bw)); }
       }
       if (i === 0) want = Math.max(want, floorFirst);
       want = Math.max(want, Math.min(maxFeed, floorTotal - sumVol(feeds)));
       want = Math.min(maxFeed, Math.max(MIN_FEED, want));
       var d = draw(want);
       if (d.vol < 0.05) break;
-      feeds.push({ at: t, vol: d.vol, parts: d.parts });
-      remaining -= d.igG * aeaEff(t, d.vol, bw);
-      t += gap;
+      feeds.push({ at: ft, vol: d.vol, parts: d.parts });
+      remaining -= d.igG * aeaEff(ft, d.vol, bw);
+      ft += gap;
     }
     if (feeds.length === 0) { feeds.push({ at: hours, vol: 0, parts: [] }); }
 
@@ -616,75 +800,67 @@
       var parts = [], pk;
       if (it.parts && it.parts.length) {
         for (pk = 0; pk < it.parts.length; pk++) {
-          parts.push((it.parts[pk].kind === '凍結初乳' ? '<span class="text-sky-700">凍結初乳 ' : '初乳 ') +
-                     fmt(it.parts[pk].vol) + ' L' + (it.parts[pk].kind === '凍結初乳' ? '</span>' : ''));
+          parts.push((it.parts[pk].kind === 'fz' ? '<span class="text-sky-700">' + t('frozen') + ' ' : t('colostrum') + ' ') +
+                     fmt(it.parts[pk].vol) + ' ' + t('L') + (it.parts[pk].kind === 'fz' ? '</span>' : ''));
         }
-      } else if (it.col > 0.01) parts.push('初乳 ' + fmt(it.col) + ' L');
-      if (it.bags > 0) parts.push('<span class="text-red-600">製剤 ' + it.bags + ' 袋</span>');
+      } else if (it.col > 0.01) parts.push(t('colostrum') + ' ' + fmt(it.col) + ' ' + t('L'));
+      if (it.bags > 0) parts.push('<span class="text-red-600">' + t('powder') + ' ' + it.bags + ' ' + t('bag') + '</span>');
       return '<span class="text-2xl">' + parts.join(' ＋ ') + '</span>' +
-             (it.bags > 0 ? '<span class="block text-sm font-bold text-slate-600">液量 計 ' + fmt(it.vol) + ' L</span>' : '');
+             (it.bags > 0 ? '<span class="block text-sm font-bold text-slate-600">' + t('liqSum', fmt(it.vol)) + '</span>' : '');
     }
 
     var head =
       '<div class="p-5 text-center">' +
-        '<div class="text-base font-bold text-slate-600">いますぐ飲ませる量</div>' +
-        '<div class="text-7xl font-black ' + (ng ? 'text-amber-600' : 'text-teal-600') + ' leading-none mt-2">' + fmt(items[0].col) + '<span class="text-3xl font-bold ml-1">L</span></div>' +
+        '<div class="text-base font-bold text-slate-600">' + t('feedNow') + '</div>' +
+        '<div class="text-7xl font-black ' + (ng ? 'text-amber-600' : 'text-teal-600') + ' leading-none mt-2">' + fmt(items[0].col) + '<span class="text-3xl font-bold ml-1">' + t('L') + '</span></div>' +
         '<div class="text-base text-slate-700 mt-3">' + (function () {
           var ps = items[0].parts || [], k, out2 = [];
           for (k = 0; k < ps.length; k++) {
-            out2.push(ps[k].kind + ' ' + fmt(ps[k].vol) + ' L（Brix ' + fmt(ps[k].kind === '凍結初乳' ? fzBrix : brix) + '％・推定IgG 約' + fmt(ps[k].kind === '凍結初乳' ? fzConc : conc, 0) + ' g/L）');
+            out2.push(t('colBrix', ps[k].kind === 'fz' ? t('frozen') : t('colostrum'), fmt(ps[k].vol),
+                        fmt(ps[k].kind === 'fz' ? fzBrix : brix), fmt(ps[k].kind === 'fz' ? fzConc : conc, 0)));
           }
-          return out2.length ? out2.join('<br>') : '初乳 Brix ' + fmt(brix) + '％（推定IgG 約' + fmt(conc, 0) + ' g/L）';
+          return out2.length ? out2.join('<br>') : t('colBrix', t('colostrum'), fmt(0), fmt(brix), fmt(conc, 0));
         })() + '</div>' +
         (items[0].bags > 0 ?
         '<div class="mt-4 pt-4 border-t-2 border-dashed border-slate-300">' +
-          '<div class="text-base font-bold text-slate-600">＋ 一緒に飲ませる初乳製剤</div>' +
-          '<div class="text-6xl font-black text-red-600 leading-none mt-2">' + items[0].bags + '<span class="text-3xl font-bold ml-1">袋</span></div>' +
-          '<div class="text-base text-slate-700 mt-2">1袋 ' + fmt(bagIgG, 0) + ' g IgG（' + fmt(bagWat) + ' L で溶く）</div>' +
-          '<div class="text-lg font-bold text-slate-800 mt-3">この回の液量 合計 ' + fmt(items[0].vol) + ' L</div>' +
+          '<div class="text-base font-bold text-slate-600">' + t('withPowder') + '</div>' +
+          '<div class="text-6xl font-black text-red-600 leading-none mt-2">' + items[0].bags + '<span class="text-3xl font-bold ml-1">' + t('bag') + '</span></div>' +
+          '<div class="text-base text-slate-700 mt-2">' + t('bagUnit', fmt(bagIgG, 0), fmt(bagWat)) + '</div>' +
+          '<div class="text-lg font-bold text-slate-800 mt-3">' + t('thisFeed', fmt(items[0].vol)) + '</div>' +
         '</div>' : '') +
       '</div>';
 
     var plist2 = items.map(function (it) { return { at: it.at, label: itemLabel(it) }; });
     var sched = (items.length > 1)
-      ? schedule(plist2, hours, '給与スケジュール（1回 ' + fmt(maxFeed) + ' L まで）',
-          '液量の合計 <b>' + fmt(totalLiq) + ' L</b>。' +
-          '<b>間隔はあけすぎないでください。</b>待つほど吸収率が落ちるので、自力で飲めるなら早めに次を与えて構いません。' +
+      ? schedule(plist2, hours, t('schedTitle', fmt(maxFeed)),
+          t('totalLiq', fmt(totalLiq)) + t('dontWait') +
           (items[0].vol >= bw * 0.09 && gap < 3
-            ? '<br><span class="text-amber-800 font-bold">※ 1回 ' + fmt(items[0].vol) + ' L と多めです。自力で飲めずチューブで入れる場合は、3時間以上あけてください。</span>'
+            ? '<br><span class="text-amber-800 font-bold">' + t('tubeWarn', fmt(items[0].vol)) + '</span>'
             : ''))
       : '<div class="bg-slate-50 border-t-2 border-slate-200 p-5 text-base text-slate-800 leading-relaxed">' +
-        'この量なら<b>1回で給与できます</b>（液量 合計 ' + fmt(totalLiq) + ' L）。飲みきれない場合は食道カテーテルを使ってください。</div>';
+        t('oneShot', fmt(totalLiq)) + '</div>';
 
     var warn = '';
     if (ng) {
       warn = '<div class="bg-red-50 border-t-2 border-red-200 p-5 text-base text-red-900 leading-relaxed">' +
-             '<div class="font-bold text-lg">🚨 初乳だけでは目標 ' + target + ' g/L に届きません</div>' +
+             '<div class="font-bold text-lg">' + t('ngTitle', target) + '</div>' +
              (limited
-               ? '<p class="mt-2 font-bold">手持ちの初乳 ' + fmt(availTotal) + ' L をすべて飲ませても、到達見込みは約 ' + fmt(achieved) + ' g/L です（不足 IgG 約 ' + fmt(short, 0) + ' g）。</p>'
-               : '<p class="mt-2 font-bold">この時間では吸収率が低く、' + fmt(maxFeed) + ' L × ' + feeds.length + '回を飲ませても到達見込みは約 ' + fmt(achieved) + ' g/L です。</p>' +
-                 '<p class="mt-2">※ 生後24時間で腸が閉じるため、<b>残り時間が短いほど飲ませられる回数そのものが減ります</b>。合計量が少なく見えるのはそのためで、足りているという意味ではありません。</p>') +
-             '<p class="mt-2 font-bold">1回目と一緒に <b class="text-2xl">初乳製剤 ' + addBags + ' 袋</b> を併用してください。' +
-             'それでも不足する場合や、すでに生後12時間を過ぎている場合は獣医師に相談を。</p>' +
+               ? '<p class="mt-2 font-bold">' + t('ngLimited', fmt(availTotal), fmt(achieved), fmt(short, 0)) + '</p>'
+               : '<p class="mt-2 font-bold">' + t('ngTime', fmt(maxFeed), feeds.length, fmt(achieved)) + '</p>' +
+                 '<p class="mt-2">' + t('ngClose') + '</p>') +
+             '<p class="mt-2 font-bold">' + t('ngBags', addBags) + '</p>' +
              '</div>';
     }
 
     var floorNote = floorApplied ?
       '<div class="bg-amber-50 border-t-2 border-amber-200 p-5 text-base text-amber-900 leading-relaxed">' +
-        '📌 目標IgGの計算だけなら <b>' + fmt(igGonly) + ' L</b> で足りますが、' +
-        '「6時間以内に体重の5％以上、24時間以内に累計15％以上」という現場の目安を下回るため、' +
-        '<b>' + fmt(total) + ' L</b> に引き上げています。初乳は多く飲ませて損はありません。' +
+        t('floorNote', fmt(igGonly), fmt(total)) +
       '</div>' : '';
 
     var plus = ng ? '' :
       '<div class="bg-teal-50 border-t-2 border-teal-200 p-5">' +
-        '<div class="font-bold text-teal-900 text-lg">💡 さらにおすすめ</div>' +
-        '<p class="text-base text-teal-900 mt-2 leading-relaxed">' +
-          '初乳が十分に取れているのであれば、<b>さらに初乳を追加でたっぷりと飲ませることを推奨します</b>。' +
-          'IgGは多いに越したことはなく、下痢・肺炎の減少や増体・将来の乳量の向上につながります。' +
-          '理想は <b>24時間で累計 ' + fmt(bw * 0.20) + ' L（体重の20％）</b>。' +
-          '1回 ' + fmt(maxFeed) + ' L を超えない範囲で、2回目・3回目の給与でしっかり飲ませてください。' +
-        '</p>' +
+        '<div class="font-bold text-teal-900 text-lg">' + t('plusTitle') + '</div>' +
+        '<p class="text-base text-teal-900 mt-2 leading-relaxed">' + t('plusBody', fmt(bw * 0.20), fmt(maxFeed)) + '</p>' +
       '</div>';
 
     out.push(card(ng ? 'border-amber-500' : 'border-teal-500', head + sched + floorNote + warn + plus));
@@ -692,22 +868,22 @@
     /* 専門的な数値は答えの下に */
     out.push(
       '<div class="bg-slate-800 text-white rounded-2xl p-4 grid grid-cols-3 gap-2 text-center">' +
-        '<div><div class="text-xs text-slate-200">目標の血清IgG</div><div class="text-2xl font-bold">' + target + '<span class="text-sm ml-0.5">g/L</span></div></div>' +
-        '<div><div class="text-xs text-slate-200">いまの吸収率</div><div class="text-2xl font-bold">' + fmt(abs0 * 100, 0) + '<span class="text-sm ml-0.5">%</span></div></div>' +
-        '<div><div class="text-xs text-slate-200">体内に入れたいIgG</div><div class="text-2xl font-bold">' + fmt(needAbsorbed, 0) + '<span class="text-sm ml-0.5">g</span></div></div>' +
+        '<div><div class="text-xs text-slate-200">' + t('statTarget') + '</div><div class="text-2xl font-bold">' + target + '<span class="text-sm ml-0.5">g/L</span></div></div>' +
+        '<div><div class="text-xs text-slate-200">' + t('statAea') + '</div><div class="text-2xl font-bold">' + fmt(abs0 * 100, 0) + '<span class="text-sm ml-0.5">%</span></div></div>' +
+        '<div><div class="text-xs text-slate-200">' + t('statNeed') + '</div><div class="text-2xl font-bold">' + fmt(needAbsorbed, 0) + '<span class="text-sm ml-0.5">g</span></div></div>' +
       '</div>'
     );
 
     out.push(
       '<div class="bg-white rounded-2xl shadow border-2 border-slate-200 p-4 text-center text-base text-slate-800">' +
-        '到達見込みの血清IgG：<b class="text-2xl ' + (ng ? 'text-amber-600' : 'text-teal-700') + '">約 ' + fmt(achieved) + ' g/L</b>' +
-        '<span class="block text-sm text-slate-600 mt-1">体重' + fmt(bw, 0) + 'kg・血漿量' + fmt(plasma) + 'L として計算</span>' +
-        (total > bw * 0.10 ? '<span class="block text-sm text-slate-600 mt-1">※ 大量に給与すると吸収効率そのものが下がる報告があるため、この値は上振れしている可能性があります。</span>' : '') +
+        t('achieved') + '<b class="text-2xl ' + (ng ? 'text-amber-600' : 'text-teal-700') + '">' + t('approx', fmt(achieved)) + '</b>' +
+        '<span class="block text-sm text-slate-600 mt-1">' + t('calcBase', fmt(bw, 0), fmt(plasma)) + '</span>' +
+        (total > bw * 0.10 ? '<span class="block text-sm text-slate-600 mt-1">' + t('overEst') + '</span>' : '') +
       '</div>'
     );
 
-    setSticky(fmt(feeds[0].vol) + '<span class="text-2xl font-bold ml-0.5">L</span>' +
-      (ng && addBags > 0 ? '<span class="text-2xl text-red-600 ml-1">＋' + addBags + '<span class="text-base font-bold">袋</span></span>' : ''));
+    setSticky(fmt(items[0].col) + '<span class="text-2xl font-bold ml-0.5">' + t('L') + '</span>' +
+      (items[0].bags > 0 ? '<span class="text-2xl text-red-600 ml-1">＋' + items[0].bags + '<span class="text-base font-bold">' + t('bag') + '</span></span>' : ''));
     $('result').innerHTML = out.join('');
   }
 
@@ -885,11 +1061,13 @@
       for (k in map) { if (p.get(k) !== null) { d[k] = p.get(k); fromUrl = true; } }
       if (p.get('target') !== null) { d.target = p.get('target'); fromUrl = true; }
       if (p.get('farm') !== null) { d.farm = p.get('farm'); fromUrl = true; }
+      if (p.get('lang') !== null) { d.lang = p.get('lang'); fromUrl = true; }
       if (fromUrl) { data = d; try { localStorage.setItem(SKEY, JSON.stringify(d)); } catch (e) {} }
     }
     if (!data) { try { data = JSON.parse(localStorage.getItem(SKEY) || 'null'); } catch (e) { data = null; } }
     if (!data) return;
 
+    if (data.lang) { LANG = (data.lang === 'ne') ? 'ne' : 'ja'; try { localStorage.setItem('colostrumLang', LANG); } catch (e) {} }
     for (k in map) { if (data[k] !== undefined && data[k] !== '') $(map[k]).value = data[k]; }
     if (data.target && $('t' + data.target)) $('t' + data.target).checked = true;
 
@@ -899,11 +1077,16 @@
       fn.className = 'text-sm font-bold bg-white/20 rounded-lg px-2 py-1';
     }
     var note = $('settingNote');
-    note.innerHTML = '⚙️ この端末の設定：体重 ' + fmt(clampNum($('bw').value, 15, 100, 40), 0) + ' kg ／ 製剤1袋 ' +
-                     fmt(clampNum($('bagIgG').value, 10, 300, 100), 0) + ' g IgG（' + fmt(clampNum($('bagWater').value, 0.5, 4, 2)) + ' L で溶く）';
+    note.innerHTML = t('setNote', fmt(clampNum($('bw').value, 15, 100, 40), 0),
+                       fmt(clampNum($('bagIgG').value, 10, 300, 100), 0), fmt(clampNum($('bagWater').value, 0.5, 4, 2)));
     note.className = 'text-sm font-bold text-slate-600 text-center';
   }
+  STATIC_NODES = initStatic();
+  try { LANG = localStorage.getItem('colostrumLang') === 'ne' ? 'ne' : 'ja'; } catch (e) {}
   applySetting();
+  applyStatic();
+  tapBind($('langJa'), function () { setLang('ja'); });
+  tapBind($('langNe'), function () { setLang('ne'); });
 
   $('clearSetting').addEventListener('click', function () {
     try { localStorage.removeItem(SKEY); } catch (e) {}
