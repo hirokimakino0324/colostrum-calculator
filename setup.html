@@ -147,6 +147,8 @@
   var qr = null;
 
   var FARMS = {};
+  var FARMS_READY = false;
+  var FARMS_ERR = '';
 
   function fillFrom(f) {
     $('farm').value = f.name || '';
@@ -170,6 +172,15 @@
       build();
       return;
     }
+    if (!FARMS_READY) {
+      lastLoadedId = '';
+      st.innerHTML = '⚠️ 登録済み農場の一覧を読み込めませんでした' + (FARMS_ERR ? '（' + FARMS_ERR + '）' : '') +
+        '。<br>このページは<b>公開URL</b>から開いてください：<br>' +
+        '<a class="underline break-all" href="https://hirokimakino0324.github.io/colostrum-calculator/setup.html">https://hirokimakino0324.github.io/colostrum-calculator/setup.html</a>';
+      st.className = 'text-base font-bold mt-2 text-amber-700 leading-relaxed';
+      build();
+      return;
+    }
     if (FARMS[id]) {
       if (lastLoadedId !== id) {
         fillFrom(FARMS[id]);
@@ -186,11 +197,17 @@
   }
 
   function loadFarms() {
-    if (!window.fetch) return;
+    if (location.protocol === 'file:') {
+      FARMS_ERR = 'ファイルを直接開いているため';
+      onIdChange();
+      return;
+    }
+    if (!window.fetch) { FARMS_ERR = 'ブラウザが古いため'; onIdChange(); return; }
     fetch('farms.json', { cache: 'no-cache' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (j) {
-        if (!j) return;
+        if (!j) { FARMS_ERR = 'farms.json を取得できませんでした'; onIdChange(); return; }
+        FARMS_READY = true;
         var k, dl = $('farmIds'), list = $('farmList');
         dl.innerHTML = ''; list.innerHTML = '';
         for (k in j) {
@@ -211,7 +228,10 @@
         }
         onIdChange();
       })
-      .catch(function () {});
+      .catch(function (e) {
+        FARMS_ERR = (e && e.message) ? e.message : '通信エラー';
+        onIdChange();
+      });
   }
 
   function build() {
