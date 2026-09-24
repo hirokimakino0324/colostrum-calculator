@@ -8,5 +8,14 @@
     "gap": 4,
     "target": 20,
     "lang": "ja"
+  },
+  "ishimura": {
+    "name": "石村牧場",
+    "bw": 40,
+    "bag": 60,
+    "water": 1,
+    "gap": 6,
+    "target": 20,
+    "lang": "ja"
   }
 }
