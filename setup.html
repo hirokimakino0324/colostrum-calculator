@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>農場別リンクの作成｜初乳給与量シミュレーター</title>
+<meta name="theme-color" content="#0f766e">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif; }
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; }
+  button, label, input, select { touch-action: manipulation; }
+  @media print {
+    .noprint { display: none !important; }
+    body { background: #fff; }
+    .sheet { border: none !important; box-shadow: none !important; }
+  }
+</style>
+</head>
+<body class="bg-slate-100 text-slate-800">
+<div class="max-w-xl mx-auto pb-16">
+
+  <header class="bg-teal-700 text-white px-5 py-3 shadow-lg noprint">
+    <h1 class="text-xl font-bold tracking-wide">農場別リンクの作成</h1>
+    <p class="text-sm text-teal-100 mt-1">獣医師用。農場ごとの設定を入れたURLとQRを作ります。</p>
+  </header>
+
+  <main class="px-4 pt-4 space-y-4">
+
+    <section class="bg-white rounded-2xl shadow border-2 border-slate-200 p-5 space-y-4 noprint">
+      <div>
+        <label class="block text-base font-bold mb-1" for="farm">農場名</label>
+        <input id="farm" type="text" maxlength="20" placeholder="例：〇〇牧場"
+               class="w-full border-2 border-slate-300 rounded-lg px-3 py-3 text-xl font-bold">
+        <p class="text-sm text-slate-600 mt-1">アプリの上部に表示されます。空欄でも構いません。</p>
+      </div>
+
+      <div>
+        <label class="block text-base font-bold mb-1" for="bw">子牛の体重（kg）</label>
+        <input id="bw" type="number" inputmode="decimal" min="15" max="100" step="1" value="40"
+               class="w-full border-2 border-slate-300 rounded-lg px-3 py-3 text-xl font-bold">
+        <div class="grid grid-cols-4 gap-2 mt-2">
+          <button type="button" data-bw="28" class="q min-h-[48px] rounded-xl border-2 border-slate-300 bg-slate-100 text-sm font-bold">和牛 28</button>
+          <button type="button" data-bw="32" class="q min-h-[48px] rounded-xl border-2 border-slate-300 bg-slate-100 text-sm font-bold">和牛 32</button>
+          <button type="button" data-bw="40" class="q min-h-[48px] rounded-xl border-2 border-slate-300 bg-slate-100 text-sm font-bold">ホル 40</button>
+          <button type="button" data-bw="45" class="q min-h-[48px] rounded-xl border-2 border-slate-300 bg-slate-100 text-sm font-bold">ホル 45</button>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-base font-bold mb-1" for="bag">初乳製剤 1袋あたりのIgG量（g）</label>
+        <input id="bag" type="number" inputmode="decimal" min="10" max="300" step="5" value="100"
+               class="w-full border-2 border-slate-300 rounded-lg px-3 py-3 text-xl font-bold">
+        <p class="text-sm text-slate-600 mt-1">その農場が使っている製品のラベル値を入れてください。</p>
+      </div>
+
+      <div>
+        <label class="block text-base font-bold mb-1" for="water">1袋を溶かす湯量（L）</label>
+        <input id="water" type="number" inputmode="decimal" min="0.5" max="4" step="0.1" value="2"
+               class="w-full border-2 border-slate-300 rounded-lg px-3 py-3 text-xl font-bold">
+      </div>
+
+      <div>
+        <label class="block text-base font-bold mb-1" for="gap">分割給与の間隔（時間）</label>
+        <input id="gap" type="number" inputmode="decimal" min="2" max="12" step="1" value="4"
+               class="w-full border-2 border-slate-300 rounded-lg px-3 py-3 text-xl font-bold">
+      </div>
+
+      <div>
+        <span class="block text-base font-bold mb-1">目標とする血清IgG濃度</span>
+        <div class="grid grid-cols-3 gap-2">
+          <label class="cursor-pointer"><input class="sr-only tg" type="radio" name="target" value="10">
+            <span class="block text-center border-2 border-slate-300 rounded-xl py-3 font-bold text-lg">10</span></label>
+          <label class="cursor-pointer"><input class="sr-only tg" type="radio" name="target" value="20" checked>
+            <span class="block text-center border-2 border-slate-300 rounded-xl py-3 font-bold text-lg">20</span></label>
+          <label class="cursor-pointer"><input class="sr-only tg" type="radio" name="target" value="30">
+            <span class="block text-center border-2 border-slate-300 rounded-xl py-3 font-bold text-lg">30</span></label>
+        </div>
+      </div>
+    </section>
+
+    <section class="sheet bg-white rounded-2xl shadow border-2 border-teal-600 p-5">
+      <h2 class="text-lg font-bold text-teal-800">この農場に渡すもの</h2>
+      <p id="summary" class="text-base font-bold mt-2 leading-relaxed"></p>
+
+      <div class="text-center mt-4">
+        <div id="qr" class="inline-block p-3 border-2 border-slate-300 rounded-xl bg-white"></div>
+      </div>
+
+      <p class="text-sm break-all mt-3 text-center"><a id="link" class="text-teal-700 font-bold underline" href="#"></a></p>
+
+      <div class="grid grid-cols-2 gap-2 mt-4 noprint">
+        <button type="button" id="copy" class="min-h-[52px] rounded-xl border-2 border-teal-600 bg-teal-600 text-white font-bold text-base">リンクをコピー</button>
+        <button type="button" id="open" class="min-h-[52px] rounded-xl border-2 border-teal-600 bg-white text-teal-700 font-bold text-base">開いて確認</button>
+      </div>
+      <button type="button" onclick="window.print()" class="w-full min-h-[52px] rounded-xl border-2 border-slate-300 bg-white font-bold text-base mt-2 noprint">この画面を印刷する</button>
+
+      <div class="mt-4 bg-slate-50 border-2 border-slate-200 rounded-xl p-3 text-sm text-slate-700 leading-relaxed">
+        このQRから開くと、その農場の設定（体重・製剤IgG量・湯量・間隔・目標）が入った状態で起動します。
+        設定は開いた端末にも保存されるので、次回以降は通常のURLから開いても同じ設定のままです。
+        ホーム画面に追加すれば、電波がなくても使えます。
+      </div>
+      <p class="text-center text-sm font-bold text-slate-600 mt-4">© LIGvets</p>
+    </section>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var BASE = location.href.replace(/setup\.html.*$/, 'index.html');
+  var qr = null;
+
+  function build() {
+    var p = [];
+    var farm = $('farm').value.trim();
+    if (farm) p.push('farm=' + encodeURIComponent(farm));
+    p.push('bw=' + encodeURIComponent($('bw').value));
+    p.push('bag=' + encodeURIComponent($('bag').value));
+    p.push('water=' + encodeURIComponent($('water').value));
+    p.push('gap=' + encodeURIComponent($('gap').value));
+    p.push('target=' + encodeURIComponent(document.querySelector('.tg:checked').value));
+    var url = BASE + '?' + p.join('&');
+
+    $('link').textContent = url;
+    $('link').href = url;
+    $('summary').innerHTML =
+      (farm ? '<span class="text-teal-800">' + farm.replace(/[<>&]/g, '') + '</span><br>' : '') +
+      '体重 ' + $('bw').value + ' kg ／ 製剤1袋 ' + $('bag').value + ' g IgG（' + $('water').value + ' L で溶く）<br>' +
+      '間隔 ' + $('gap').value + ' 時間 ／ 目標 ' + document.querySelector('.tg:checked').value + ' g/L';
+
+    var box = $('qr');
+    box.innerHTML = '';
+    try { qr = new QRCode(box, { text: url, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M }); }
+    catch (e) { box.textContent = 'QRを表示できません'; }
+
+    Array.prototype.forEach.call(document.querySelectorAll('.tg'), function (el) {
+      el.nextElementSibling.className = el.checked
+        ? 'block text-center border-2 border-teal-600 bg-teal-600 text-white rounded-xl py-3 font-bold text-lg'
+        : 'block text-center border-2 border-slate-300 rounded-xl py-3 font-bold text-lg';
+    });
+  }
+
+  ['farm', 'bw', 'bag', 'water', 'gap'].forEach(function (id) { $(id).addEventListener('input', build); });
+  Array.prototype.forEach.call(document.querySelectorAll('.tg'), function (el) { el.addEventListener('change', build); });
+  Array.prototype.forEach.call(document.querySelectorAll('.q'), function (b) {
+    b.addEventListener('click', function () { $('bw').value = b.dataset.bw; build(); });
+  });
+
+  $('copy').addEventListener('click', function () {
+    var url = $('link').textContent;
+    var done = function () { $('copy').textContent = 'コピーしました'; setTimeout(function () { $('copy').textContent = 'リンクをコピー'; }, 1500); };
+    if (navigator.clipboard) { navigator.clipboard.writeText(url).then(done, done); }
+    else {
+      var ta = document.createElement('textarea');
+      ta.value = url; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta); done();
+    }
+  });
+  $('open').addEventListener('click', function () { window.open($('link').textContent, '_blank'); });
+
+  build();
+})();
+</script>
+</body>
+</html>

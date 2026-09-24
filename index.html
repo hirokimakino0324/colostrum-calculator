@@ -29,7 +29,10 @@
 <div class="max-w-xl mx-auto pb-40">
 
   <header class="bg-teal-700 text-white px-5 py-3 shadow-lg sticky top-0 z-20">
-    <h1 class="text-xl font-bold tracking-wide">初乳給与量シミュレーター</h1>
+    <div class="flex items-baseline gap-2 flex-wrap">
+      <h1 class="text-xl font-bold tracking-wide">初乳給与量シミュレーター</h1>
+      <span id="farmName" class="hidden text-sm font-bold bg-white/20 rounded-lg px-2 py-1"></span>
+    </div>
   </header>
 
   <p class="px-5 pt-4 text-base font-bold text-slate-700">子牛に「何を・どれだけ・いつ」飲ませるかを計算します。</p>
@@ -183,6 +186,8 @@
       </div>
     </section>
 
+    <p id="settingNote" class="hidden text-sm font-bold text-slate-600 text-center"></p>
+
     <!-- 結果 -->
     <section id="result" class="space-y-4 scroll-mt-24"></section>
 
@@ -238,6 +243,13 @@
           <p class="text-sm text-slate-600 mt-1 leading-relaxed">
             <b>あけすぎないでください。</b>時間がたつほど吸収率が落ちるため、自力で飲めるなら3〜4時間おきに詰めて構いません
             （自然哺乳の子牛は1日5〜8回飲みます）。
+          </p>
+        </div>
+        <div class="pt-2 border-t-2 border-slate-200">
+          <button type="button" id="clearSetting"
+                  class="w-full min-h-[48px] rounded-xl border-2 border-slate-300 bg-white text-base font-bold text-slate-700">この端末に保存された設定を消す</button>
+          <p class="text-sm text-slate-600 mt-2 leading-relaxed">
+            獣医師の方へ：農場ごとの設定を入れたリンクは <a href="setup.html" class="text-teal-700 font-bold underline">こちらのページ</a> で作れます。
           </p>
         </div>
       </div>
@@ -860,6 +872,42 @@
       var row = e.target.closest('.logrow');
       if (row) { row.parentNode.removeChild(row); calcLog(); }
     }
+  });
+
+  /* ── 農場ごとの設定（URLパラメータ → この端末に保存） ───────── */
+  var SKEY = 'colostrumFarmSetting';
+  function applySetting() {
+    var p, data = null, fromUrl = false, k;
+    try { p = new URLSearchParams(location.search); } catch (e) { p = null; }
+    var map = { bw: 'bw', bag: 'bagIgG', water: 'bagWater', gap: 'gap' };
+    if (p) {
+      var d = {};
+      for (k in map) { if (p.get(k) !== null) { d[k] = p.get(k); fromUrl = true; } }
+      if (p.get('target') !== null) { d.target = p.get('target'); fromUrl = true; }
+      if (p.get('farm') !== null) { d.farm = p.get('farm'); fromUrl = true; }
+      if (fromUrl) { data = d; try { localStorage.setItem(SKEY, JSON.stringify(d)); } catch (e) {} }
+    }
+    if (!data) { try { data = JSON.parse(localStorage.getItem(SKEY) || 'null'); } catch (e) { data = null; } }
+    if (!data) return;
+
+    for (k in map) { if (data[k] !== undefined && data[k] !== '') $(map[k]).value = data[k]; }
+    if (data.target && $('t' + data.target)) $('t' + data.target).checked = true;
+
+    if (data.farm) {
+      var fn = $('farmName');
+      fn.textContent = data.farm;
+      fn.className = 'text-sm font-bold bg-white/20 rounded-lg px-2 py-1';
+    }
+    var note = $('settingNote');
+    note.innerHTML = '⚙️ この端末の設定：体重 ' + fmt(clampNum($('bw').value, 15, 100, 40), 0) + ' kg ／ 製剤1袋 ' +
+                     fmt(clampNum($('bagIgG').value, 10, 300, 100), 0) + ' g IgG（' + fmt(clampNum($('bagWater').value, 0.5, 4, 2)) + ' L で溶く）';
+    note.className = 'text-sm font-bold text-slate-600 text-center';
+  }
+  applySetting();
+
+  $('clearSetting').addEventListener('click', function () {
+    try { localStorage.removeItem(SKEY); } catch (e) {}
+    location.href = location.pathname;
   });
 
   addRow(0.5, 3, 24, 0);
