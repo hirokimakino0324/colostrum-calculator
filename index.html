@@ -1050,37 +1050,80 @@
     }
   });
 
-  /* ── 農場ごとの設定（URLパラメータ → この端末に保存） ───────── */
+  /* ── 農場ごとの設定 ────────────────────────────────
+     ?id=<農場ID> … farms.json を見に行く（サーバー側を直せば全端末に反映）
+     ?bw=&bag=… … URLに直接埋め込む方式（単発用。従来どおり）
+     どちらもこの端末に保存し、圏外でも前回の設定で動く            */
   var SKEY = 'colostrumFarmSetting';
-  function applySetting() {
-    var p, data = null, fromUrl = false, k;
-    try { p = new URLSearchParams(location.search); } catch (e) { p = null; }
-    var map = { bw: 'bw', bag: 'bagIgG', water: 'bagWater', gap: 'gap' };
-    if (p) {
-      var d = {};
-      for (k in map) { if (p.get(k) !== null) { d[k] = p.get(k); fromUrl = true; } }
-      if (p.get('target') !== null) { d.target = p.get('target'); fromUrl = true; }
-      if (p.get('farm') !== null) { d.farm = p.get('farm'); fromUrl = true; }
-      if (p.get('lang') !== null) { d.lang = p.get('lang'); fromUrl = true; }
-      if (fromUrl) { data = d; try { localStorage.setItem(SKEY, JSON.stringify(d)); } catch (e) {} }
-    }
-    if (!data) { try { data = JSON.parse(localStorage.getItem(SKEY) || 'null'); } catch (e) { data = null; } }
-    if (!data) return;
+  var SMAP = { bw: 'bw', bag: 'bagIgG', water: 'bagWater', gap: 'gap' };
 
+  function loadStored() {
+    try { return JSON.parse(localStorage.getItem(SKEY) || 'null'); } catch (e) { return null; }
+  }
+  function saveStored(d) {
+    try { localStorage.setItem(SKEY, JSON.stringify(d)); } catch (e) {}
+  }
+
+  function fillSetting(data) {
+    if (!data) return;
+    var k;
     if (data.lang) { LANG = (data.lang === 'ne') ? 'ne' : 'ja'; try { localStorage.setItem('colostrumLang', LANG); } catch (e) {} }
-    for (k in map) { if (data[k] !== undefined && data[k] !== '') $(map[k]).value = data[k]; }
+    for (k in SMAP) { if (data[k] !== undefined && data[k] !== '' && data[k] !== null) $(SMAP[k]).value = data[k]; }
     if (data.target && $('t' + data.target)) $('t' + data.target).checked = true;
 
+    var fn = $('farmName');
     if (data.farm) {
-      var fn = $('farmName');
       fn.textContent = data.farm;
       fn.className = 'text-sm font-bold bg-white/20 rounded-lg px-2 py-1';
+    } else {
+      fn.className = 'hidden';
     }
     var note = $('settingNote');
     note.innerHTML = t('setNote', fmt(clampNum($('bw').value, 15, 100, 40), 0),
                        fmt(clampNum($('bagIgG').value, 10, 300, 100), 0), fmt(clampNum($('bagWater').value, 0.5, 4, 2)));
     note.className = 'text-sm font-bold text-slate-600 text-center';
   }
+
+  /* farms.json から最新の設定を取り直す（オンラインのときだけ成功する） */
+  function refreshFromServer(id) {
+    if (!id || !window.fetch) return;
+    fetch('farms.json', { cache: 'no-cache' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        var f = j && j[id];
+        if (!f) return;
+        var d = {
+          id: id,
+          farm: f.name || id,
+          bw: f.bw, bag: f.bag, water: f.water, gap: f.gap,
+          target: f.target, lang: f.lang
+        };
+        var prev = JSON.stringify(loadStored());
+        if (JSON.stringify(d) === prev) return;   // 変化なし
+        saveStored(d);
+        fillSetting(d);
+        applyStatic();
+        run();
+      })
+      .catch(function () {});   // 圏外なら保存済みの設定のまま
+  }
+
+  function applySetting() {
+    var p, k, d = {}, fromUrl = false;
+    try { p = new URLSearchParams(location.search); } catch (e) { p = null; }
+    if (p) {
+      if (p.get('id') !== null) { d.id = p.get('id'); fromUrl = true; }
+      for (k in SMAP) { if (p.get(k) !== null) { d[k] = p.get(k); fromUrl = true; } }
+      if (p.get('target') !== null) { d.target = p.get('target'); fromUrl = true; }
+      if (p.get('farm') !== null) { d.farm = p.get('farm'); fromUrl = true; }
+      if (p.get('lang') !== null) { d.lang = p.get('lang'); fromUrl = true; }
+    }
+    var data = fromUrl ? d : loadStored();
+    if (fromUrl) saveStored(d);
+    fillSetting(data);
+    if (data && data.id) refreshFromServer(data.id);
+  }
+
   STATIC_NODES = initStatic();
   try { LANG = localStorage.getItem('colostrumLang') === 'ne' ? 'ne' : 'ja'; } catch (e) {}
   applySetting();

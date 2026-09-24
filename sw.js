@@ -1,9 +1,10 @@
 /* 牛舎で電波が届かなくても開けるようにするためのキャッシュ */
-var CACHE = 'colostrum-v5';
+var CACHE = 'colostrum-v6';
 var ASSETS = [
   './',
   './index.html',
   './setup.html',
+  './farms.json',
   './qr.html',
   './manifest.webmanifest',
   './icon-192.png',

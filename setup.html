@@ -38,6 +38,16 @@
       </div>
 
       <div>
+        <label class="block text-base font-bold mb-1" for="id">農場ID（半角英数字）</label>
+        <input id="id" type="text" maxlength="32" placeholder="例：tanaka"
+               class="w-full border-2 border-slate-300 rounded-lg px-3 py-3 text-xl font-bold">
+        <p class="text-sm text-slate-600 mt-1 leading-relaxed">
+          IDを入れると<b>あとから設定を変更できるリンク</b>になります（推奨）。
+          空欄のままだと設定をURLに埋め込む方式になり、変更時はリンクの配り直しが必要です。
+        </p>
+      </div>
+
+      <div>
         <label class="block text-base font-bold mb-1" for="bw">子牛の体重（kg）</label>
         <input id="bw" type="number" inputmode="decimal" min="15" max="100" step="1" value="40"
                class="w-full border-2 border-slate-300 rounded-lg px-3 py-3 text-xl font-bold">
@@ -108,10 +118,17 @@
       </div>
       <button type="button" onclick="window.print()" class="w-full min-h-[52px] rounded-xl border-2 border-slate-300 bg-white font-bold text-base mt-2 noprint">この画面を印刷する</button>
 
+      <div id="idNote"></div>
+
+      <div id="jsonBox" class="hidden">
+        <p class="text-sm font-bold text-slate-700 mb-1">farms.json に貼る内容</p>
+        <pre id="json" class="bg-slate-900 text-teal-200 text-xs rounded-xl p-3 overflow-x-auto"></pre>
+        <button type="button" id="copyJson" class="w-full min-h-[48px] rounded-xl border-2 border-slate-300 bg-white font-bold text-base mt-2">JSONをコピー</button>
+      </div>
+
       <div class="mt-4 bg-slate-50 border-2 border-slate-200 rounded-xl p-3 text-sm text-slate-700 leading-relaxed">
-        このQRから開くと、その農場の設定（体重・製剤IgG量・湯量・間隔・目標）が入った状態で起動します。
-        設定は開いた端末にも保存されるので、次回以降は通常のURLから開いても同じ設定のままです。
-        ホーム画面に追加すれば、電波がなくても使えます。
+        このQRから開くと、その農場の設定（体重・製剤IgG量・湯量・間隔・目標・言語）が入った状態で起動します。
+        設定は開いた端末にも保存されるので、圏外でも同じ設定で使えます。ホーム画面に追加すれば電波がなくても起動します。
       </div>
       <p class="text-center text-sm font-bold text-slate-600 mt-4">© LIGvets</p>
     </section>
@@ -129,15 +146,41 @@
   function build() {
     var p = [];
     var farm = $('farm').value.trim();
-    if (farm) p.push('farm=' + encodeURIComponent(farm));
-    p.push('bw=' + encodeURIComponent($('bw').value));
-    p.push('bag=' + encodeURIComponent($('bag').value));
-    p.push('water=' + encodeURIComponent($('water').value));
-    p.push('gap=' + encodeURIComponent($('gap').value));
-    p.push('target=' + encodeURIComponent(document.querySelector('.tg:checked').value));
+    var id = $('id').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+    if ($('id').value !== id) $('id').value = id;
     var lg = document.querySelector('.lg:checked').value;
-    if (lg === 'ne') p.push('lang=ne');
+    var tg = document.querySelector('.tg:checked').value;
+
+    if (id) {
+      p.push('id=' + encodeURIComponent(id));
+    } else {
+      if (farm) p.push('farm=' + encodeURIComponent(farm));
+      p.push('bw=' + encodeURIComponent($('bw').value));
+      p.push('bag=' + encodeURIComponent($('bag').value));
+      p.push('water=' + encodeURIComponent($('water').value));
+      p.push('gap=' + encodeURIComponent($('gap').value));
+      p.push('target=' + encodeURIComponent(tg));
+      if (lg === 'ne') p.push('lang=ne');
+    }
     var url = BASE + '?' + p.join('&');
+
+    var json = '  "' + (id || 'farm-id') + '": {\n' +
+               '    "name": "' + farm.replace(/"/g, '') + '",\n' +
+               '    "bw": ' + $('bw').value + ',\n' +
+               '    "bag": ' + $('bag').value + ',\n' +
+               '    "water": ' + $('water').value + ',\n' +
+               '    "gap": ' + $('gap').value + ',\n' +
+               '    "target": ' + tg + ',\n' +
+               '    "lang": "' + lg + '"\n' +
+               '  }';
+    $('json').textContent = json;
+    $('jsonBox').className = id ? 'mt-4 noprint' : 'hidden';
+    $('idNote').className = id
+      ? 'mt-3 bg-teal-50 border-2 border-teal-200 rounded-xl p-3 text-sm text-teal-900 leading-relaxed'
+      : 'mt-3 bg-amber-50 border-2 border-amber-200 rounded-xl p-3 text-sm text-amber-900 leading-relaxed';
+    $('idNote').innerHTML = id
+      ? '✅ <b>ID方式</b>：設定は farms.json 側で管理します。あとで製剤のg数などを変えるときは、下のJSONを farms.json に反映すれば、<b>配り直さずに全端末へ反映</b>されます。'
+      : '⚠️ <b>URL埋め込み方式</b>：設定がURLに入ります。あとで変更した場合は<b>リンクを配り直し</b>、iPhoneではホーム画面アイコンの追加し直しが必要です。';
 
     $('link').textContent = url;
     $('link').href = url;
@@ -159,7 +202,7 @@
     });
   }
 
-  ['farm', 'bw', 'bag', 'water', 'gap'].forEach(function (id) { $(id).addEventListener('input', build); });
+  ['farm', 'id', 'bw', 'bag', 'water', 'gap'].forEach(function (id) { $(id).addEventListener('input', build); });
   Array.prototype.forEach.call(document.querySelectorAll('.tg, .lg'), function (el) { el.addEventListener('change', build); });
   Array.prototype.forEach.call(document.querySelectorAll('.q'), function (b) {
     b.addEventListener('click', function () { $('bw').value = b.dataset.bw; build(); });
@@ -177,6 +220,17 @@
     }
   });
   $('open').addEventListener('click', function () { window.open($('link').textContent, '_blank'); });
+  $('copyJson').addEventListener('click', function () {
+    var txt = $('json').textContent;
+    var done = function () { $('copyJson').textContent = 'コピーしました'; setTimeout(function () { $('copyJson').textContent = 'JSONをコピー'; }, 1500); };
+    if (navigator.clipboard) { navigator.clipboard.writeText(txt).then(done, done); }
+    else {
+      var ta = document.createElement('textarea');
+      ta.value = txt; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta); done();
+    }
+  });
 
   build();
 })();
