@@ -39,9 +39,12 @@
 
       <div>
         <label class="block text-base font-bold mb-1" for="id">農場ID（半角英数字）</label>
-        <input id="id" type="text" maxlength="32" placeholder="例：tanaka"
+        <input id="id" type="text" maxlength="32" placeholder="例：tanaka" list="farmIds" autocapitalize="off" autocorrect="off" spellcheck="false"
                class="w-full border-2 border-slate-300 rounded-lg px-3 py-3 text-xl font-bold">
-        <p class="text-sm text-slate-600 mt-1 leading-relaxed">
+        <datalist id="farmIds"></datalist>
+        <p id="idState" class="text-base font-bold mt-2"></p>
+        <div id="farmList" class="flex flex-wrap gap-2 mt-2"></div>
+        <p class="text-sm text-slate-600 mt-2 leading-relaxed">
           IDを入れると<b>あとから設定を変更できるリンク</b>になります（推奨）。
           空欄のままだと設定をURLに埋め込む方式になり、変更時はリンクの配り直しが必要です。
         </p>
@@ -143,6 +146,74 @@
   var BASE = location.href.replace(/setup\.html.*$/, 'index.html');
   var qr = null;
 
+  var FARMS = {};
+
+  function fillFrom(f) {
+    $('farm').value = f.name || '';
+    if (f.bw !== undefined) $('bw').value = f.bw;
+    if (f.bag !== undefined) $('bag').value = f.bag;
+    if (f.water !== undefined) $('water').value = f.water;
+    if (f.gap !== undefined) $('gap').value = f.gap;
+    var tg = document.querySelector('.tg[value="' + (f.target || 20) + '"]');
+    if (tg) tg.checked = true;
+    var lg = document.querySelector('.lg[value="' + (f.lang === 'ne' ? 'ne' : 'ja') + '"]');
+    if (lg) lg.checked = true;
+  }
+
+  var lastLoadedId = '';
+  function onIdChange() {
+    var id = $('id').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+    var st = $('idState');
+    if (!id) {
+      st.textContent = '';
+      lastLoadedId = '';
+      build();
+      return;
+    }
+    if (FARMS[id]) {
+      if (lastLoadedId !== id) {
+        fillFrom(FARMS[id]);
+        lastLoadedId = id;
+      }
+      st.textContent = '✅ 登録済み：' + (FARMS[id].name || id) + ' の設定を読み込みました';
+      st.className = 'text-base font-bold mt-2 text-teal-700';
+    } else {
+      lastLoadedId = '';
+      st.textContent = '🆕 未登録のIDです。下のJSONを farms.json に追加してください';
+      st.className = 'text-base font-bold mt-2 text-amber-700';
+    }
+    build();
+  }
+
+  function loadFarms() {
+    if (!window.fetch) return;
+    fetch('farms.json', { cache: 'no-cache' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (!j) return;
+        var k, dl = $('farmIds'), list = $('farmList');
+        dl.innerHTML = ''; list.innerHTML = '';
+        for (k in j) {
+          if (k.charAt(0) === '_' || typeof j[k] !== 'object') continue;
+          FARMS[k] = j[k];
+          var op = document.createElement('option');
+          op.value = k; dl.appendChild(op);
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'min-h-[44px] px-3 rounded-xl border-2 border-teal-600 bg-white text-teal-700 text-sm font-bold';
+          b.textContent = (j[k].name || k);
+          b.setAttribute('data-id', k);
+          b.addEventListener('click', function () {
+            $('id').value = this.getAttribute('data-id');
+            onIdChange();
+          });
+          list.appendChild(b);
+        }
+        onIdChange();
+      })
+      .catch(function () {});
+  }
+
   function build() {
     var p = [];
     var farm = $('farm').value.trim();
@@ -207,7 +278,9 @@
     });
   }
 
-  ['farm', 'id', 'bw', 'bag', 'water', 'gap'].forEach(function (id) { $(id).addEventListener('input', build); });
+  ['farm', 'bw', 'bag', 'water', 'gap'].forEach(function (id) { $(id).addEventListener('input', build); });
+  $('id').addEventListener('input', onIdChange);
+  $('id').addEventListener('change', onIdChange);
   Array.prototype.forEach.call(document.querySelectorAll('.tg, .lg'), function (el) { el.addEventListener('change', build); });
   Array.prototype.forEach.call(document.querySelectorAll('.q'), function (b) {
     b.addEventListener('click', function () { $('bw').value = b.dataset.bw; build(); });
@@ -238,6 +311,7 @@
   });
 
   build();
+  loadFarms();
 })();
 </script>
 </body>
